@@ -511,7 +511,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="L_back_coxa_jnt"/>
       <child link="L_back_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -526,7 +526,7 @@
       <origin xyz="0 0 0.08" rpy="1.5708 0 3.14159"/>
       <parent link="L_back_femur_jnt"/>
       <child link="L_back_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -542,7 +542,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="L_front_coxa_jnt"/>
       <child link="L_front_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -557,7 +557,7 @@
       <origin xyz="0 0 0.08" rpy="-1.5708 3.14159 0"/>
       <parent link="L_front_femur_jnt"/>
       <child link="L_front_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -573,7 +573,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="L_mid_coxa_jnt"/>
       <child link="L_mid_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -588,7 +588,7 @@
       <origin xyz="0 0 0.08" rpy="1.5708 0 -3.14159"/>
       <parent link="L_mid_femur_jnt"/>
       <child link="L_mid_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -596,7 +596,7 @@
       <origin xyz="-0.0876 -0.05057 0" rpy="0 0 -2.0944"/>
       <parent link="body_jnt"/>
       <child link="R_back_coxa_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="0 0 1.0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -604,7 +604,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="R_back_coxa_jnt"/>
       <child link="R_back_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -619,7 +619,7 @@
       <origin xyz="0 0 0.08" rpy="1.5708 0 3.14159"/>
       <parent link="R_back_femur_jnt"/>
       <child link="R_back_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -627,7 +627,7 @@
       <origin xyz="0.0876 -0.05057 0" rpy="0 0 -1.0472"/>
       <parent link="body_jnt"/>
       <child link="R_front_coxa_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="0 0 1.0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -635,7 +635,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="R_front_coxa_jnt"/>
       <child link="R_front_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -650,7 +650,7 @@
       <origin xyz="0 0 0.08" rpy="1.5708 0 3.14159"/>
       <parent link="R_front_femur_jnt"/>
       <child link="R_front_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -658,7 +658,7 @@
       <origin xyz="0 -0.06985 0" rpy="0 0 -1.5708"/>
       <parent link="body_jnt"/>
       <child link="R_mid_coxa_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="0 0 1.0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -666,7 +666,7 @@
       <origin xyz="0.0294 0 0" rpy="1.5708 0 1.5708"/>
       <parent link="R_mid_coxa_jnt"/>
       <child link="R_mid_femur_jnt"/>
-      <axis xyz="0 0 1.0"/>
+      <axis xyz="1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
@@ -681,7 +681,7 @@
       <origin xyz="0 0 0.08" rpy="1.5708 0 3.14159"/>
       <parent link="R_mid_femur_jnt"/>
       <child link="R_mid_tibia_jnt"/>
-      <axis xyz="0 0 -1.0"/>
+      <axis xyz="-1.0 0 0"/>
       <limit lower="-1.5708" upper="1.5708" effort="1.274" velocity="3e-05"/>
     </joint>
 
