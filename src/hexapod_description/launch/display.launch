@@ -1,0 +1,7 @@
+<launch>
+    <arg name="gui" default="False" />
+    
+    <param name="hexapod_description" textfile="$(find hexapod_description)/urdf/crab_model.urdf" />
+    
+    <param name="use_gui" value="$(arg gui)"/>
+</launch>
