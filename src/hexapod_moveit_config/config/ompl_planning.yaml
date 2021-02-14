@@ -186,7 +186,7 @@ R_front_leg_grp:
   projection_evaluator: joints(R_front_coxa_jnt,R_front_femur_jnt)
   longest_valid_segment_fraction: 0.005
 L_front_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
@@ -213,7 +213,7 @@ L_front_foot_grp:
     - SPARS
     - SPARStwo
 R_front_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
@@ -356,7 +356,7 @@ R_back_leg_grp:
   projection_evaluator: joints(R_back_coxa_jnt,R_back_femur_jnt)
   longest_valid_segment_fraction: 0.005
 L_mid_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
@@ -383,7 +383,7 @@ L_mid_foot_grp:
     - SPARS
     - SPARStwo
 L_back_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
@@ -410,7 +410,7 @@ L_back_foot_grp:
     - SPARS
     - SPARStwo
 R_mid_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
@@ -437,7 +437,7 @@ R_mid_foot_grp:
     - SPARS
     - SPARStwo
 R_back_foot_grp:
-  default_planner_config: None
+  default_planner_config: ""
   planner_configs:
     - AnytimePathShortening
     - SBL
