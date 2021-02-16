@@ -4,17 +4,6 @@ controller_list:
       - L_front_coxa_jnt
       - L_front_femur_jnt
       - L_front_tibia_jnt
-  - name: fake_R_front_leg_grp_controller
-    joints:
-      - R_front_coxa_jnt
-      - R_front_femur_jnt
-      - R_front_tibia_jnt
-  - name: fake_L_front_foot_grp_controller
-    joints:
-      []
-  - name: fake_R_front_foot_grp_controller
-    joints:
-      []
   - name: fake_L_mid_leg_grp_controller
     joints:
       - L_mid_coxa_jnt
@@ -25,6 +14,11 @@ controller_list:
       - L_back_coxa_jnt
       - L_back_femur_jnt
       - L_back_tibia_jnt
+  - name: fake_R_front_leg_grp_controller
+    joints:
+      - R_front_coxa_jnt
+      - R_front_femur_jnt
+      - R_front_tibia_jnt
   - name: fake_R_mid_leg_grp_controller
     joints:
       - R_mid_coxa_jnt
@@ -35,10 +29,16 @@ controller_list:
       - R_back_coxa_jnt
       - R_back_femur_jnt
       - R_back_tibia_jnt
+  - name: fake_L_front_foot_grp_controller
+    joints:
+      []
   - name: fake_L_mid_foot_grp_controller
     joints:
       []
   - name: fake_L_back_foot_grp_controller
+    joints:
+      []
+  - name: fake_R_front_foot_grp_controller
     joints:
       []
   - name: fake_R_mid_foot_grp_controller
@@ -50,12 +50,12 @@ controller_list:
 initial:  # Define initial robot poses.
   - group: L_front_leg_grp
     pose: L_front_leg_pose_def
-  - group: R_front_leg_grp
-    pose: R_front_leg_pose_def
   - group: L_mid_leg_grp
     pose: L_mid_leg_pose_def
   - group: L_back_leg_grp
     pose: L_back_leg_pose_def
+  - group: R_front_leg_grp
+    pose: R_front_leg_pose_def
   - group: R_mid_leg_grp
     pose: R_mid_leg_pose_def
   - group: R_back_leg_grp

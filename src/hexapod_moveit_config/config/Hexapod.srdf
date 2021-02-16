@@ -15,18 +15,6 @@
         <joint name="L_front_tibia_jnt"/>
         <joint name="L_front_foot_jnt"/>
     </group>
-    <group name="R_front_leg_grp">
-        <joint name="R_front_coxa_jnt"/>
-        <joint name="R_front_femur_jnt"/>
-        <joint name="R_front_tibia_jnt"/>
-        <joint name="R_front_foot_jnt"/>
-    </group>
-    <group name="L_front_foot_grp">
-        <joint name="L_front_ee_jnt"/>
-    </group>
-    <group name="R_front_foot_grp">
-        <joint name="R_front_ee_jnt"/>
-    </group>
     <group name="L_mid_leg_grp">
         <joint name="L_mid_coxa_jnt"/>
         <joint name="L_mid_femur_jnt"/>
@@ -38,6 +26,12 @@
         <joint name="L_back_femur_jnt"/>
         <joint name="L_back_tibia_jnt"/>
         <joint name="L_back_foot_jnt"/>
+    </group>
+    <group name="R_front_leg_grp">
+        <joint name="R_front_coxa_jnt"/>
+        <joint name="R_front_femur_jnt"/>
+        <joint name="R_front_tibia_jnt"/>
+        <joint name="R_front_foot_jnt"/>
     </group>
     <group name="R_mid_leg_grp">
         <joint name="R_mid_coxa_jnt"/>
@@ -51,11 +45,17 @@
         <joint name="R_back_tibia_jnt"/>
         <joint name="R_back_foot_jnt"/>
     </group>
+    <group name="L_front_foot_grp">
+        <joint name="L_front_ee_jnt"/>
+    </group>
     <group name="L_mid_foot_grp">
         <joint name="L_mid_ee_jnt"/>
     </group>
     <group name="L_back_foot_grp">
         <joint name="L_back_ee_jnt"/>
+    </group>
+    <group name="R_front_foot_grp">
+        <joint name="R_front_ee_jnt"/>
     </group>
     <group name="R_mid_foot_grp">
         <joint name="R_mid_ee_jnt"/>
@@ -69,11 +69,6 @@
         <joint name="L_front_femur_jnt" value="0"/>
         <joint name="L_front_tibia_jnt" value="0"/>
     </group_state>
-    <group_state name="R_front_leg_pose_def" group="R_front_leg_grp">
-        <joint name="R_front_coxa_jnt" value="0"/>
-        <joint name="R_front_femur_jnt" value="0"/>
-        <joint name="R_front_tibia_jnt" value="0"/>
-    </group_state>
     <group_state name="L_mid_leg_pose_def" group="L_mid_leg_grp">
         <joint name="L_mid_coxa_jnt" value="0"/>
         <joint name="L_mid_femur_jnt" value="0"/>
@@ -83,6 +78,11 @@
         <joint name="L_back_coxa_jnt" value="0"/>
         <joint name="L_back_femur_jnt" value="0"/>
         <joint name="L_back_tibia_jnt" value="0"/>
+    </group_state>
+    <group_state name="R_front_leg_pose_def" group="R_front_leg_grp">
+        <joint name="R_front_coxa_jnt" value="0"/>
+        <joint name="R_front_femur_jnt" value="0"/>
+        <joint name="R_front_tibia_jnt" value="0"/>
     </group_state>
     <group_state name="R_mid_leg_pose_def" group="R_mid_leg_grp">
         <joint name="R_mid_coxa_jnt" value="0"/>
@@ -96,17 +96,20 @@
     </group_state>
     <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
     <end_effector name="L_front_foot_ee" parent_link="L_front_foot_link" group="L_front_foot_grp" parent_group="L_front_leg_grp"/>
-    <end_effector name="R_front_foot_ee" parent_link="R_front_foot_link" group="R_front_foot_grp" parent_group="R_front_leg_grp"/>
     <end_effector name="L_mid_foot_ee" parent_link="L_mid_foot_link" group="L_mid_foot_grp" parent_group="L_mid_leg_grp"/>
     <end_effector name="L_back_foot_ee" parent_link="L_back_foot_link" group="L_back_foot_grp" parent_group="L_back_leg_grp"/>
+    <end_effector name="R_front_foot_ee" parent_link="R_front_foot_link" group="R_front_foot_grp" parent_group="R_front_leg_grp"/>
     <end_effector name="R_mid_foot_ee" parent_link="R_mid_foot_link" group="R_mid_foot_grp" parent_group="R_mid_leg_grp"/>
     <end_effector name="R_back_foot_ee" parent_link="R_back_foot_link" group="R_back_foot_grp" parent_group="R_back_leg_grp"/>
+    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    <virtual_joint name="root_virtual_jnt" type="floating" parent_frame="world" child_link="root_link"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="L_back_coxa_link" link2="L_back_femur_link" reason="Adjacent"/>
     <disable_collisions link1="L_back_coxa_link" link2="L_front_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="L_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="L_front_tibia_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="R_back_femur_link" reason="Never"/>
+    <disable_collisions link1="L_back_coxa_link" link2="R_back_tibia_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="R_front_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="R_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="R_front_tibia_link" reason="Never"/>
@@ -115,8 +118,6 @@
     <disable_collisions link1="L_back_coxa_link" link2="R_mid_tibia_link" reason="Never"/>
     <disable_collisions link1="L_back_coxa_link" link2="body_link" reason="Adjacent"/>
     <disable_collisions link1="L_back_femur_link" link2="L_back_tibia_link" reason="Adjacent"/>
-    <disable_collisions link1="L_back_femur_link" link2="L_front_coxa_link" reason="Never"/>
-    <disable_collisions link1="L_back_femur_link" link2="L_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_femur_link" link2="R_back_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_femur_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_femur_link" link2="R_front_coxa_link" reason="Never"/>
@@ -125,10 +126,8 @@
     <disable_collisions link1="L_back_femur_link" link2="R_mid_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_femur_link" link2="R_mid_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_femur_link" link2="R_mid_tibia_link" reason="Never"/>
-    <disable_collisions link1="L_back_femur_link" link2="body_link" reason="Default"/>
     <disable_collisions link1="L_back_tibia_link" link2="L_front_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_tibia_link" link2="R_back_coxa_link" reason="Never"/>
-    <disable_collisions link1="L_back_tibia_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_tibia_link" link2="R_front_coxa_link" reason="Never"/>
     <disable_collisions link1="L_back_tibia_link" link2="R_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_back_tibia_link" link2="R_front_tibia_link" reason="Never"/>
@@ -140,20 +139,19 @@
     <disable_collisions link1="L_front_coxa_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_back_tibia_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_front_coxa_link" reason="Never"/>
-    <disable_collisions link1="L_front_coxa_link" link2="R_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_front_tibia_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_mid_coxa_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_mid_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="R_mid_tibia_link" reason="Never"/>
     <disable_collisions link1="L_front_coxa_link" link2="body_link" reason="Adjacent"/>
     <disable_collisions link1="L_front_femur_link" link2="L_front_tibia_link" reason="Adjacent"/>
+    <disable_collisions link1="L_front_femur_link" link2="L_mid_coxa_link" reason="Never"/>
     <disable_collisions link1="L_front_femur_link" link2="R_back_coxa_link" reason="Never"/>
     <disable_collisions link1="L_front_femur_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_femur_link" link2="R_back_tibia_link" reason="Never"/>
-    <disable_collisions link1="L_front_femur_link" link2="R_front_coxa_link" reason="Never"/>
     <disable_collisions link1="L_front_femur_link" link2="R_mid_coxa_link" reason="Never"/>
-    <disable_collisions link1="L_front_femur_link" link2="R_mid_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_femur_link" link2="R_mid_tibia_link" reason="Never"/>
+    <disable_collisions link1="L_front_femur_link" link2="body_link" reason="Never"/>
     <disable_collisions link1="L_front_tibia_link" link2="R_back_coxa_link" reason="Never"/>
     <disable_collisions link1="L_front_tibia_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_front_tibia_link" link2="R_back_tibia_link" reason="Never"/>
@@ -177,12 +175,10 @@
     <disable_collisions link1="L_mid_femur_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_back_tibia_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_front_coxa_link" reason="Never"/>
-    <disable_collisions link1="L_mid_femur_link" link2="R_front_femur_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_front_tibia_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_mid_coxa_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_mid_femur_link" reason="Never"/>
     <disable_collisions link1="L_mid_femur_link" link2="R_mid_tibia_link" reason="Never"/>
-    <disable_collisions link1="L_mid_femur_link" link2="body_link" reason="User"/>
     <disable_collisions link1="L_mid_tibia_link" link2="R_back_coxa_link" reason="Never"/>
     <disable_collisions link1="L_mid_tibia_link" link2="R_back_femur_link" reason="Never"/>
     <disable_collisions link1="L_mid_tibia_link" link2="R_back_tibia_link" reason="Never"/>
@@ -198,14 +194,13 @@
     <disable_collisions link1="R_back_coxa_link" link2="R_front_tibia_link" reason="Never"/>
     <disable_collisions link1="R_back_coxa_link" link2="body_link" reason="Adjacent"/>
     <disable_collisions link1="R_back_femur_link" link2="R_back_tibia_link" reason="Adjacent"/>
-    <disable_collisions link1="R_back_femur_link" link2="R_front_coxa_link" reason="Never"/>
-    <disable_collisions link1="R_back_femur_link" link2="body_link" reason="Default"/>
     <disable_collisions link1="R_back_tibia_link" link2="R_front_coxa_link" reason="Never"/>
     <disable_collisions link1="R_front_coxa_link" link2="R_front_femur_link" reason="Adjacent"/>
     <disable_collisions link1="R_front_coxa_link" link2="body_link" reason="Adjacent"/>
     <disable_collisions link1="R_front_femur_link" link2="R_front_tibia_link" reason="Adjacent"/>
+    <disable_collisions link1="R_front_femur_link" link2="R_mid_coxa_link" reason="Never"/>
+    <disable_collisions link1="R_front_femur_link" link2="body_link" reason="Never"/>
     <disable_collisions link1="R_mid_coxa_link" link2="R_mid_femur_link" reason="Adjacent"/>
     <disable_collisions link1="R_mid_coxa_link" link2="body_link" reason="Adjacent"/>
     <disable_collisions link1="R_mid_femur_link" link2="R_mid_tibia_link" reason="Adjacent"/>
-    <disable_collisions link1="R_mid_femur_link" link2="body_link" reason="User"/>
 </robot>
