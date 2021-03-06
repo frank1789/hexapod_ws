@@ -136,7 +136,7 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/joypad-control_node.cpp)
 add_executable(${PROJECT_NAME}_node 
-  src/controller_node.cpp
+  src/controller_node.cc
   src/joypad.cc
   src/joypad_button.cc
   src/joypad_thumbstick.cc
@@ -153,9 +153,9 @@ add_executable(${PROJECT_NAME}_node
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

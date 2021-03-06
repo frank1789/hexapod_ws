@@ -26,9 +26,9 @@ class ThumbStick {
   friend std::ostream& operator<<(std::ostream& os, const ThumbStick& tb);
 
  private:
-  inline double normalize();
-  inline double computeMagnitude();
-  inline double computeAngle();
+  inline double normalize(double x_axis);
+  inline double computeMagnitude(double x_axis, double y_axis);
+  inline double computeAngle(double x_axis, double y_axis);
 
  private:
   double raw_x_axis_;
