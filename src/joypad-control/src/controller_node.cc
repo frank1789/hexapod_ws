@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
   ros::init(argc, argv, "controller_node");
-  Controller c;
+  Joypad joypad_controller;
   ros::spin();
 
   return 0;
