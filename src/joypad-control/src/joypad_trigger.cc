@@ -14,7 +14,7 @@ void Trigger::setValue(double value) {
 double Trigger::getValue() const { return value_; }
 
 constexpr double Trigger::normalize(double value) {
-  return (value - kMin) / (kMax - kMin);
+  return (((value - kValueMin_) / (kValueMax_ - kValueMin_)) * (kMax_ - kMin_)) + kMin_;
 }
 
 std::ostream& operator<<(std::ostream& os, const Trigger& ts) {

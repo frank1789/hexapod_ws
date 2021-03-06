@@ -27,6 +27,8 @@ private:
   double value_;
   static constexpr double kMax_{1.0};
   static constexpr double kMin_{0.0};
+  static constexpr double kValueMax_{1.0};
+  static constexpr double kValueMin_{-1.0};
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Trigger& ts);
