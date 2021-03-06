@@ -15,7 +15,7 @@ int Button::getValue()() const {return pressed_}
 
 std::ostream& operator<<(std::ostream& os, const Button& bt) {
   auto stat = bt.pressed_ == 1 ? "pressed" : "false";
-  return os << bt.bt_name_ << " [" << stat << "]\n";
+  return os << bt.bt_name_ << " [" << stat << "]" << std::endl;
 }
 
 #endif  // JOYPAD_THIMBSTICK_H

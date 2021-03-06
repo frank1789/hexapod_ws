@@ -62,7 +62,7 @@ double ThumbStick::computeAngle(double x_axis, double y_axis) {
 
 std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
   return os << tb.tb_name_ << " [" << x_axis_normalized_ << ", " << raw_y_axis
-            << "]\n";
+            << "]" << std::endl;
 }
 
 #endif  // JOYPAD_THIMBSTICK_H
