@@ -140,6 +140,7 @@ add_executable(${PROJECT_NAME}_node
   src/joypad.cc
   src/joypad_button.cc
   src/joypad_thumbstick.cc
+  src/joypad_trigger.cc
 )
 
 ## Rename C++ executable without prefix
