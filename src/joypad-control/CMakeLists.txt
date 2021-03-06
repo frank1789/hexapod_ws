@@ -135,6 +135,12 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/joypad-control_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/controller_node.cpp
+  src/joypad.cc
+  src/joypad_button.cc
+  src/joypad_thumbstick.cc
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
