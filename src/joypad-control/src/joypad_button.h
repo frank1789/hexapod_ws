@@ -1,5 +1,5 @@
-#ifndef JOYPAD_Button_H
-#define JOYPAD_THIMBSTICK_H
+#ifndef JOYPAD_BUTTON_H
+#define JOYPAD_BUTTON_H
 
 #include <iostream>
 #include <string>
@@ -24,3 +24,5 @@ class Button {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Button& tb);
+
+#endif  // JOYPAD_BUTTON_H

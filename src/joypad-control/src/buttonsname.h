@@ -38,10 +38,10 @@ constexpr cstring_t KL2 = "L2";
 constexpr cstring_t KR2 = "R2";
 }  // namespace trigger
 
-namespace stick {
+namespace thumbstick {
 constexpr cstring_t kL3 = "L3";
 constexpr cstring_t kR3 = "R3";
-}  // namespace stick
+}  // namespace thumbstick
 
 namespace button {
 constexpr cstring_t kCross = "Cross";
@@ -57,7 +57,6 @@ constexpr cstring_t kUp = "Up";
 constexpr cstring_t kDown = "Down";
 constexpr cstring_t kRight = "Right";
 constexpr cstring_t kLeft = "Left";
-
 }  // namespace button
 
 #endif  // BUTTONS_NAME_H

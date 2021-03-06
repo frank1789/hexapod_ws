@@ -35,11 +35,11 @@ void ThumbStick::setAxes(double x_axis, double y_axis) {
 }
 
 std::tuple<double, double> ThumbStick::getRawAxesValues() const {
-  return std::make_tuple(raw_x_axis, raw_y_axis);
+  return std::make_tuple(raw_x_axis_, raw_y_axis_);
 }
 
 std::tuple<double, double> ThumbStick::getAxesValues() const {
-  return std::make_tuple(x_axis_normalized_, raw_y_axis);
+  return std::make_tuple(x_axis_normalized_, raw_y_axis_);
 }
 
 std::tuple<double, double> ThumbStick::getVectorAxisAngle() const {
@@ -61,8 +61,6 @@ double ThumbStick::computeAngle(double x_axis, double y_axis) {
 }
 
 std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
-  return os << tb.tb_name_ << " [" << x_axis_normalized_ << ", " << raw_y_axis
+  return os << tb.tb_name_ << " [" << tb.x_axis_normalized_ << ", " << tb.raw_y_axis_
             << "]" << std::endl;
 }
-
-#endif  // JOYPAD_THIMBSTICK_H

@@ -11,7 +11,7 @@ Button::Button(const std::string& name, int value) {
 
 void Button::setButton(int value) { pressed_ = value; }
 
-int Button::getValue()() const {return pressed_}
+int Button::getValue() const { return pressed_; }
 
 std::ostream& operator<<(std::ostream& os, const Button& bt) {
   auto stat = bt.pressed_ == 1 ? "pressed" : "false";

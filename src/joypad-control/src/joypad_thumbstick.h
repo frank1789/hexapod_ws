@@ -1,5 +1,5 @@
 #ifndef JOYPAD_THUMBSTICK_H
-#define JOYPAD_THIMBSTICK_H
+#define JOYPAD_THUMBSTICK_H
 
 #include <iostream>
 #include <string>
@@ -41,4 +41,4 @@ class ThumbStick {
 
 inline std::ostream& operator<<(std::ostream& os, const ThumbStick& tb);
 
-#endif  // JOYPAD_THIMBSTICK_H
+#endif  // JOYPAD_THUMBSTICK_H
