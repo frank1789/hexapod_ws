@@ -6,15 +6,20 @@
 // buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 //           X, O, T, Q,L1,R1,L2,R2,SE,ST,PS,L3,R3,UP,DW,RT,LT 
 
-// T -> trinagolo
-// Q -> quadrato
-// SE -> select
-// ST -> start
+// X  -> cross button
+// X  -> circle button
+// T  -> triangle button
+// Q  -> square button
+// SE -> select button
+// ST -> start button
 // PS -> PS button
-// DW -> direction cross down
-// RT -> direction cross right
-// LT -> direction cross left
-
+// UP -> cross directional up
+// DW -> cross directional down
+// RT -> cross directional right
+// LT -> cross directional left
+//
+// remember button 0 -> not pressed, 1 -> pressed
+//
 // axes [-0.0, -0.0, 1.0, -0.0, -0.0, 1.0]
 //         |    |     |     |     |    +---> R2 axis (form 1.0 to -1.0(pressed)) remap as 0 to 1.0 (pressed)
 //         |    |     |     |     +---> right stick y axis 
@@ -27,8 +32,6 @@
 //         |
 //         +---> left stick x axis on left position == 1, on right position == -1 ( rember to invert rispect actual value)
 //
-
-// remember button 0 -> not pressed, 1 -> pressed
 // clang-format on
 
 using cstring_t = const char*;
