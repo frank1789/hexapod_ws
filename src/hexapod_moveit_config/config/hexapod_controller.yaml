@@ -1,0 +1,79 @@
+Hexapod:
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
+
+  # Position Controllers ---------------------------------------
+  L_front_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_front_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_front_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_front_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_front_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_front_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_mid_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_mid_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_mid_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_mid_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_mid_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_mid_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_back_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_back_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_back_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_back_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  L_back_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: L_back_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+
+  R_front_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_front_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_front_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_front_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_front_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_front_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_mid_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_mid_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_mid_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_mid_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_mid_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_mid_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_back_coxa_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_back_coxa_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_back_femur_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_back_femur_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
+  R_back_tibia_position_controller:
+    type: effort_controllers/JointPositionController
+    joint: R_back_tibia_jnt
+    pid: {p: 100.0, i: 0.01, d: 10.0}
