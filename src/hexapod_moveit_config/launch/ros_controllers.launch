@@ -2,11 +2,12 @@
 <launch>
 
   <!-- Load joint controller configurations from YAML file to parameter server -->
-  <rosparam file="$(find hexapod_moveit_config)/config/ros_controllers.yaml" command="load"/>
+  <!--<rosparam file="$(find hexapod_moveit_config)/config/ros_controllers.yaml" command="load"/>-->
+  <rosparam file="$(find hexapod_moveit_config)/config/hexapod_controllers.yaml" command="load"/>
 
   <!-- Load the controllers -->
   <node name="controller_spawner" pkg="controller_manager" type="spawner" respawn="false" ns="/Hexapod"
-    output="screen" args="--namespace=/Hexapod joint_state_controller 
+    output="screen" args="--namespace=/Hexapod joint_state_controller
     L_front_leg_grp_controller L_mid_leg_grp_controller L_back_leg_grp_controller
     R_front_leg_grp_controller R_mid_leg_grp_controller R_back_leg_grp_controller"/>
 
