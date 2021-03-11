@@ -37,7 +37,7 @@ Hexapod:
     publish_rate: 50
 
   L_front_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - L_front_coxa_jnt
       - L_front_femur_jnt
@@ -48,7 +48,7 @@ Hexapod:
       L_front_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
 
   L_mid_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - L_mid_coxa_jnt
       - L_mid_femur_jnt
@@ -59,7 +59,7 @@ Hexapod:
       L_mid_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
 
   L_back_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - L_back_coxa_jnt
       - L_back_femur_jnt
@@ -70,7 +70,7 @@ Hexapod:
       L_back_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
 
   R_front_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - R_front_coxa_jnt
       - R_front_femur_jnt
@@ -81,7 +81,7 @@ Hexapod:
       R_front_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
 
   R_mid_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - R_mid_coxa_jnt
       - R_mid_femur_jnt
@@ -92,7 +92,7 @@ Hexapod:
       R_mid_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
 
   R_back_leg_grp_controller:
-    type: position_controllers/jointTrajectoryController
+    type: position_controllers/JointPositionController
     joints:
       - R_back_coxa_jnt
       - R_back_femur_jnt
