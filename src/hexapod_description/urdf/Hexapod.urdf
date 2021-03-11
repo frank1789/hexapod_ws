@@ -2,7 +2,7 @@
 <!-- created with Phobos 1.0.1 "Capricious Choutengan" -->
 <robot name="Hexapod">
     <link name="L_back_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -24,7 +24,7 @@
         </collision>
     </link>
     <link name="L_back_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -46,7 +46,7 @@
         </collision>
     </link>
     <link name="L_back_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -55,7 +55,7 @@
 
     </link>
     <link name="L_back_tibia_link">
-        
+
 <inertial>
             <origin xyz="0.00047 -0.00372 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -84,7 +84,7 @@
         </collision>
     </link>
     <link name="L_front_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -106,7 +106,7 @@
         </collision>
     </link>
     <link name="L_front_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -128,7 +128,7 @@
         </collision>
     </link>
     <link name="L_front_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -137,7 +137,7 @@
 
     </link>
     <link name="L_front_tibia_link">
-        
+
 <inertial>
             <origin xyz="0.00047 -0.00372 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -166,7 +166,7 @@
         </collision>
     </link>
     <link name="L_mid_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -188,7 +188,7 @@
         </collision>
     </link>
     <link name="L_mid_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -210,7 +210,7 @@
         </collision>
     </link>
     <link name="L_mid_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -219,7 +219,7 @@
 
     </link>
     <link name="L_mid_tibia_link">
-        
+
 <inertial>
             <origin xyz="0.00047 -0.00372 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -248,7 +248,7 @@
         </collision>
     </link>
     <link name="R_back_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -270,7 +270,7 @@
         </collision>
     </link>
     <link name="R_back_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -292,7 +292,7 @@
         </collision>
     </link>
     <link name="R_back_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -301,7 +301,7 @@
 
     </link>
     <link name="R_back_tibia_link">
-        
+
 <inertial>
             <origin xyz="-0.00049 -0.0037 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -330,7 +330,7 @@
         </collision>
     </link>
     <link name="R_front_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -352,7 +352,7 @@
         </collision>
     </link>
     <link name="R_front_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -374,7 +374,7 @@
         </collision>
     </link>
     <link name="R_front_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -383,7 +383,7 @@
 
     </link>
     <link name="R_front_tibia_link">
-        
+
 <inertial>
             <origin xyz="-0.00049 -0.0037 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -412,7 +412,7 @@
         </collision>
     </link>
     <link name="R_mid_coxa_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -434,7 +434,7 @@
         </collision>
     </link>
     <link name="R_mid_femur_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.1" />
@@ -456,7 +456,7 @@
         </collision>
     </link>
     <link name="R_mid_foot_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.001" />
@@ -465,7 +465,7 @@
 
     </link>
     <link name="R_mid_tibia_link">
-        
+
 <inertial>
             <origin xyz="-0.00049 -0.0037 -0.0585" rpy="0 0 0" />
             <mass value="0.2" />
@@ -494,7 +494,7 @@
         </collision>
     </link>
     <link name="body_link">
-        
+
 <inertial>
             <origin xyz="0 0 0" rpy="0 0 0" />
             <mass value="0.2" />
@@ -741,7 +741,7 @@
     <material name="tibia_mat">
         <color rgba="0.64 0.64 0.64 1.0" />
     </material>
-    
+
 <transmission name="trans_L_back_coxa_jnt">
         <type>transmission_interface/SimpleTransmission</type>
         <joint name="L_back_coxa_jnt">
@@ -924,7 +924,7 @@
     </transmission>
     <gazebo>
         <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-            <robotNamespace>/</robotNamespace>
+            <robotNamespace>/Hexapod</robotNamespace>
         </plugin>
     </gazebo>
 </robot>

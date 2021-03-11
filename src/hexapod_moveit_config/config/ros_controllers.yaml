@@ -31,11 +31,79 @@ hardware_interface:
   sim_control_mode: 1  # 0: position, 1: velocity
 # Publish all joint states
 # Creates the /joint_states topic necessary in ROS
-joint_state_controller:
-  type: joint_state_controller/JointStateController
-  publish_rate: 50
+Hexapod:
+  joint_state_controller:
+    type: joint_state_controller/JointStateController
+    publish_rate: 50
+
+  L_front_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - L_front_coxa_jnt
+      - L_front_femur_jnt
+      - L_front_tibia_jnt
+    gains:
+      L_front_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_front_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_front_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
+  L_mid_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - L_mid_coxa_jnt
+      - L_mid_femur_jnt
+      - L_mid_tibia_jnt
+    gains:
+      L_mid_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_mid_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_mid_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
+  L_back_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - L_back_coxa_jnt
+      - L_back_femur_jnt
+      - L_back_tibia_jnt
+    gains:
+      L_back_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_back_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      L_back_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
+  R_front_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - R_front_coxa_jnt
+      - R_front_femur_jnt
+      - R_front_tibia_jnt
+    gains:
+      R_front_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_front_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_front_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
+  R_mid_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - R_mid_coxa_jnt
+      - R_mid_femur_jnt
+      - R_mid_tibia_jnt
+    gains:
+      R_mid_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_mid_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_mid_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
+  R_back_leg_grp_controller:
+    type: position_controllers/jointTrajectoryController
+    joints:
+      - R_back_coxa_jnt
+      - R_back_femur_jnt
+      - R_back_tibia_jnt
+    gains:
+      R_back_coxa_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_back_femur_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+      R_back_tibia_jnt: {p: 100, d: 1, i: 1, i_clamp: 1}
+
 controller_list:
-  - name: L_front_leg_grp_controller
+  - name: Hexapod/L_front_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
@@ -43,7 +111,7 @@ controller_list:
       - L_front_coxa_jnt
       - L_front_femur_jnt
       - L_front_tibia_jnt
-  - name: L_mid_leg_grp_controller
+  - name: Hexapod/L_mid_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
@@ -51,7 +119,7 @@ controller_list:
       - L_mid_coxa_jnt
       - L_mid_femur_jnt
       - L_mid_tibia_jnt
-  - name: L_back_leg_grp_controller
+  - name: Hexapod/L_back_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
@@ -59,7 +127,7 @@ controller_list:
       - L_back_coxa_jnt
       - L_back_femur_jnt
       - L_back_tibia_jnt
-  - name: R_front_leg_grp_controller
+  - name: Hexapod/R_front_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
@@ -67,7 +135,7 @@ controller_list:
       - R_front_coxa_jnt
       - R_front_femur_jnt
       - R_front_tibia_jnt
-  - name: R_mid_leg_grp_controller
+  - name: Hexapod/R_mid_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
@@ -75,7 +143,7 @@ controller_list:
       - R_mid_coxa_jnt
       - R_mid_femur_jnt
       - R_mid_tibia_jnt
-  - name: R_back_leg_grp_controller
+  - name: Hexapod/R_back_leg_grp_controller
     action_ns: follow_joint_trajectory
     default: True
     type: FollowJointTrajectory
