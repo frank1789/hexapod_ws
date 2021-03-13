@@ -120,7 +120,7 @@ Hexapod:
     R_back_tibia_jnt: {p: 1, i: 0, d: 0}
 
   controller_list:
-    - name: L_front_leg_grp_controller
+    - name: L_front_leg__controller
       action_ns: follow_joint_trajectory
       default: True
       type: FollowJointTrajectory
@@ -130,7 +130,7 @@ Hexapod:
         - L_front_tibia_jnt
     - name: L_mid_leg_grp_controller
       action_ns: follow_joint_trajectory
-      default: True
+      default: False
       type: FollowJointTrajectory
       joints:
         - L_mid_coxa_jnt
@@ -138,7 +138,7 @@ Hexapod:
         - L_mid_tibia_jnt
     - name: L_back_leg_grp_controller
       action_ns: follow_joint_trajectory
-      default: True
+      default: False
       type: FollowJointTrajectory
       joints:
         - L_back_coxa_jnt
@@ -146,7 +146,7 @@ Hexapod:
         - L_back_tibia_jnt
     - name: R_front_leg_grp_controller
       action_ns: follow_joint_trajectory
-      default: True
+      default: False
       type: FollowJointTrajectory
       joints:
         - R_front_coxa_jnt
@@ -154,7 +154,7 @@ Hexapod:
         - R_front_tibia_jnt
     - name: R_mid_leg_grp_controller
       action_ns: follow_joint_trajectory
-      default: True
+      default: False
       type: FollowJointTrajectory
       joints:
         - R_mid_coxa_jnt
@@ -162,7 +162,7 @@ Hexapod:
         - R_mid_tibia_jnt
     - name: R_back_leg_grp_controller
       action_ns: follow_joint_trajectory
-      default: True
+      default: False
       type: FollowJointTrajectory
       joints:
         - R_back_coxa_jnt
