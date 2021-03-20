@@ -7,6 +7,6 @@
     <param name="coalesce_interval" value="0.02" />
   </node>
 
- <node name="joypad-controller" pkg="joypad-control" type="joypad-control" output="screen"/>
+ <node name="joypad-controller" pkg="joypad-control" type="teleop" output="screen"/>
 
 </launch>
