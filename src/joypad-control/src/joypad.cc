@@ -1,5 +1,7 @@
 #include "joypad.h"
 
+#include <ros/console.h>
+
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
 #include "joypad_button.h"
@@ -39,8 +41,11 @@ void Joypad::performAction(std::function<void(void)> ptr_fun) {}
 // float32[] axes
 // int32[] buttons
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
-//   ROS_INFO("Joypad: [%s]", msg->data.c_str());
+  ROS_INFO("Joypad: [%s]", msg->data.c_str());
   // decode two array
 //   msg->axes();
 //   msg->buttons();
+  if(msg->button[PS3_BUTTON_SELECT]){
+    ROS_DEBUG("Press %s",     special_[8])
+  }
 }
