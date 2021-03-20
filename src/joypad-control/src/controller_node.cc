@@ -10,6 +10,4 @@ int main(int argc, char** argv) {
   ROS_INFO("start controller_node, starting from now you can controller the hexapod by joypad.");
   Joypad joypad_controller;
   ros::spin();
-
-  return 0;
 }
