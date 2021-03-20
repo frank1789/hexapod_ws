@@ -1,6 +1,8 @@
 #include "joypad.h"
 
 #include <ros/console.h>
+#include <sensor_msgs/JoyFeedbackArray.h>
+#include <sensor_msgs/JointState.h>
 
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
