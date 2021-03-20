@@ -12,7 +12,6 @@
 class Joypad {
  public:
   explicit Joypad();
-  void performAction(std::function<void(void)> ptr_fun);
 
  private:
   void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);

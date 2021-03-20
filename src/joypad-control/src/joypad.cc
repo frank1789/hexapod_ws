@@ -32,14 +32,9 @@ std::unordered_map<uint8_t, std::string> Joypad::special_{
 
 Joypad::Joypad() {
   // Subscribe to the /joy topic for input from joystick
-  joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>("joy", 10, &Joypad::controllerCallback, this);
+  joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>("/joy", 10, &Joypad::controllerCallback, this);
 }
 
-void Joypad::performAction(std::function<void(void)> ptr_fun) {}
-
-// std_msgs/Header header
-// float32[] axes
-// int32[] buttons
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_DEBUG("Callback controller");
   // ROS_INFO("Joypad: [%s]", msg->data.c_str());
