@@ -32,7 +32,7 @@ std::unordered_map<uint8_t, std::string> Joypad::special_{
 
 Joypad::Joypad() {
   // Subscribe to the /joy topic for input from joystick
-  joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>("/joy", 10, &Joypad::controllerCallback, this);
+  joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>("joy", 10, &Joypad::controllerCallback, this);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {

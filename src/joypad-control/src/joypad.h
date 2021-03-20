@@ -14,7 +14,7 @@ class Joypad {
   explicit Joypad();
 
  private:
-  void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
+  static void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
 
  private:
   static std::unordered_map<uint8_t, std::string> triggers_;
