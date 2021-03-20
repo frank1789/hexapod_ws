@@ -46,9 +46,9 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 
   ROS_INFO_STREAM(std::to_string(msg->axes[PS3_AXIS_BUTTON_REAR_LEFT_2]));
 
-  std::cerr << "axes" << msgs->axes.size() <<std::endl;
-  std::cerr << "buttons" <<msgs->buttons.size() <<std::endl;
-  if(msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]){
+  std::cerr << "axes" << msg->axes.size() << std::endl;
+  std::cerr << "buttons" << msg->buttons.size() << std::endl;
+  if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
     ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
   }
   if (msg->buttons[PS3_BUTTON_SELECT]) {
