@@ -1,5 +1,10 @@
 #include "joypad.h"
 
+#include <iostream>
+#include <string>
+
+
+
 #include <ros/console.h>
 #include <sensor_msgs/JoyFeedbackArray.h>
 #include <sensor_msgs/JointState.h>
@@ -37,8 +42,10 @@ Joypad::Joypad() {
   joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>("joy", 10, &Joypad::controllerCallback);
 }
 
-void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
+void Joypad::controllerCallback(const sensor_msgs::Joy& msg) {
   ROS_DEBUG("Callback controller");
+  std::cout << "AGENT CALLBACK" << std::endl;
+    ROS_INFO_STREAM( "Agent::callback -- Push RobotsPos message" );
   // ROS_INFO("Joypad: [%s]", msg->data.c_str());
   // decode two array
 //   msg->axes();
