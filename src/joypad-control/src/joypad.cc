@@ -44,11 +44,11 @@ Joypad::Joypad() {
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
 
-  ROS_INFO_STREAM(msg->axes[PS3_AXIS_BUTTON_REAR_LEFT_2])
+  ROS_INFO_STREAM(msg->axes[PS3_AXIS_BUTTON_REAR_LEFT_2]);
 
 
   if(msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]){
-    ROS_DEBUG("Press %s", Joypad::thumbstick_[0].c_str());
+    ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
   }
   if (msg->buttons[PS3_BUTTON_SELECT]) {
     ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
