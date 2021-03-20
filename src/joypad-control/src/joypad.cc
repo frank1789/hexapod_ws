@@ -43,17 +43,11 @@ Joypad::Joypad() {
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
-  ROS_DEBUG("Callback controller");
-  std::cout << "AGENT CALLBACK" << std::endl;
-    ROS_INFO_STREAM( "Agent::callback -- Push RobotsPos message" );
-  // ROS_INFO("Joypad: [%s]", msg->data.c_str());
-  // decode two array
-//   msg->axes();
-//   msg->buttons();
+  ROS_INFO_STREAM( "Joypad::controllerCallback" );
   if(msg->buttons[PS3_BUTTON_SELECT]){
-    
-     
-    
     ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
+  }
+  if(msg->buttons[PS3_BUTTON_START]){
+    ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
   }
 }
