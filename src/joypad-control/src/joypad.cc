@@ -46,6 +46,9 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
 //   msg->axes();
 //   msg->buttons();
   if(msg->buttons[PS3_BUTTON_SELECT]){
-    ROS_DEBUG("Press %s", special_[8]);
+    
+    const char* b_name = Joypad::special_[8];
+    
+    ROS_DEBUG("Press %s", b_name);
   }
 }
