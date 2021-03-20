@@ -41,7 +41,7 @@ void Joypad::performAction(std::function<void(void)> ptr_fun) {}
 // float32[] axes
 // int32[] buttons
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
-  ROS_INFO("Joypad: [%s]", msg->data.c_str());
+  // ROS_INFO("Joypad: [%s]", msg->data.c_str());
   // decode two array
 //   msg->axes();
 //   msg->buttons();
