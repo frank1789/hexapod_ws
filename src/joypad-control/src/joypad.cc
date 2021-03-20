@@ -8,23 +8,23 @@
 #include "joypad_thumbstick.h"
 #include "joypad_trigger.h"
 
-const std::unordered_map<uint8_t, std::string> Joypad::triggers_{
+std::unordered_map<uint8_t, std::string> Joypad::triggers_{
     {6, trigger::KL2}, {7, trigger::KR2}};
 
-const std::unordered_map<uint8_t, std::string> Joypad::thumbsticks_{
+std::unordered_map<uint8_t, std::string> Joypad::thumbsticks_{
     {0, thumbstick::kL3},
     {1, thumbstick::kL3},
     {3, thumbstick::kR3},
     {4, thumbstick::kR3}};
 
-const std::unordered_map<uint8_t, std::string> Joypad::buttons_{
+std::unordered_map<uint8_t, std::string> Joypad::buttons_{
     {0, button::kCross},  {1, button::kCircle}, {2, button::kTriangle},
     {3, button::kSquare}, {4, button::kL1},     {5, button::KR1},
     {13, button::kUp},    {14, button::kDown},  {15, button::kRight},
     {16, button::kLeft},
 };
 
-const std::unordered_map<uint8_t, std::string> Joypad::special_{
+std::unordered_map<uint8_t, std::string> Joypad::special_{
     {8, button::kSelect},
     {9, button::kStart},
     {10, button::kPlaystation},

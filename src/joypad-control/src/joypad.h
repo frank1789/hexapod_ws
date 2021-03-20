@@ -18,10 +18,10 @@ class Joypad {
   void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
 
  private:
-  static const std::unordered_map<uint8_t, std::string> triggers_;
-  static const std::unordered_map<uint8_t, std::string> thumbsticks_;
-  static const std::unordered_map<uint8_t, std::string> buttons_;
-  static const std::unordered_map<uint8_t, std::string> special_;
+  static std::unordered_map<uint8_t, std::string> triggers_;
+  static std::unordered_map<uint8_t, std::string> thumbsticks_;
+  static std::unordered_map<uint8_t, std::string> buttons_;
+  static std::unordered_map<uint8_t, std::string> special_;
 
   ros::NodeHandle node_handler_;
   ros::Subscriber joy_subriber_;
