@@ -12,20 +12,26 @@
 #include "buttonsname.h"
 
 Joypad::Joypad() {
-  triggers_{{6, Trigger(trigger::KL2)}, {7, Trigger(trigger::KR2)}};
+  triggers_{std::make_pair(6, Trigger(trigger::KL2)), std::make_pair(7, Trigger(trigger::KR2))};
 
-  thumbsticks_{{0, ThumbStick(thumbstick::kL3)},
-               {1, ThumbStick(thumbstick::kL3)},
-               {3, ThumbStick(thumbstick::kR3)},
-               {4, ThumbStick(thumbstick::kR3)}};
+  thumbsticks_{std::make_pair(0, ThumbStick(thumbstick::kL3)),
+               std::make_pair(1, ThumbStick(thumbstick::kL3)),
+               std::make_pair(3, ThumbStick(thumbstick::kR3)),
+               std::make_pair(4, ThumbStick(thumbstick::kR3))};
   buttons_{
-      {0, Button(button::kCross)},        {1, Button(button::kCircle)},
-      {2, Button(button::kTriangle)},     {3, Button(button::kSquare)},
-      {4, Button(button::kL1)},           {5, Button(button::KR1)},
-      {13, Button(button::kUp)},          {14, Button(button::kDown)},
-      {15, Button(button::kRight)},       {16, Button(button::kLeft)},
-      {8, Button(button::kSelect)},       {9, Button(button::kStart)},
-      {10, Button(button::kPlaystation)},
+      std::make_pair(0, Button(button::kCross)),
+      std::make_pair(1, Button(button::kCircle)),
+      std::make_pair(2, Button(button::kTriangle)),
+      std::make_pair(3, Button(button::kSquare)),
+      std::make_pair(4, Button(button::kL1)),
+      std::make_pair(5, Button(button::KR1)),
+      std::make_pair(13, Button(button::kUp)),
+      std::make_pair(14, Button(button::kDown)),
+      std::make_pair(15, Button(button::kRight)),
+      std::make_pair(16, Button(button::kLeft)),
+      std::make_pair(8, Button(button::kSelect)),
+      std::make_pair(9, Button(button::kStart)),
+      std::make_pair(10, Button(button::kPlaystation)),
   };
 
   // Subscribe to the /joy topic for input from joystick
