@@ -12,10 +12,10 @@
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
 
-std::unordered_map<uint8_t, Trigger> Joypad::triggers_{{6, trigger::KL2},
+std::unordered_map<int, Trigger> Joypad::triggers_{{6, trigger::KL2},
                                                            {7, trigger::KR2}};
 
-std::unordered_map<uint8_t, ThumbStick> Joypad::thumbsticks_{
+std::unordered_map<int, ThumbStick> Joypad::thumbsticks_{
     {0, thumbstick::kL3},
     {1, thumbstick::kL3},
     {3, thumbstick::kR3},
