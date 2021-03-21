@@ -39,9 +39,8 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
 
   for (int i = 0; msg->buttons.size(); i++) {
-    auto btn = Joypad::buttons_[i];
-    btn.setButton(msg->buttons[i]);
-    ROS_DEBUG_STREAM(btn);
+    buttons_[i].setButton(msg->buttons[i]);
+    std::cerr << "enter cycle, pressed btn " << buttons_[i] << std::endl;
   }
 
   // for(const auto a: msg->axes){
