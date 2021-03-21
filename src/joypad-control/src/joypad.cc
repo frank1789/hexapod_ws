@@ -36,7 +36,7 @@ Joypad::Joypad() {
 
   // Subscribe to the /joy topic for input from joystick
   joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
-      "joy", 10, &Joypad::controllerCallback, this);
+      "joy", 1, &Joypad::controllerCallback, this);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
