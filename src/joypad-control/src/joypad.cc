@@ -17,19 +17,23 @@ Joypad::Joypad() {
   L2_triggers_.setName(trigger::kL2);
   R2_triggers_.setName(trigger::kR2);
   // init buttons
-  buttons_[0] = Button(button::kCross);
-  buttons_[1] = Button(button::kCircle);
-  buttons_[2] = Button(button::kTriangle);
-  buttons_[3] = Button(button::kSquare);
-  buttons_[4] = Button(button::kL1);
-  buttons_[5] = Button(button::KR1);
-  buttons_[13] = Button(button::kUp);
-  buttons_[14] = Button(button::kDown);
-  buttons_[15] = Button(button::kRight);
-  buttons_[16] = Button(button::kLeft);
-  buttons_[8] = Button(button::kSelect);
-  buttons_[9] = Button(button::kStart);
-  buttons_[10] = Button(button::kPlaystation);
+  buttons_[PS3_BUTTON_ACTION_CROSS] = Button(button::kCross);
+  buttons_[PS3_BUTTON_ACTION_CIRCLE] = Button(button::kCircle);
+  buttons_[PS3_BUTTON_ACTION_TRIANGLE] = Button(button::kTriangle);
+  buttons_[PS3_BUTTON_ACTION_SQUARE] = Button(button::kSquare);
+  buttons_[PS3_BUTTON_L1] = Button(button::kL1);
+  buttons_[PS3_BUTTON_R1] = Button(button::KR1);
+  buttons_[PS3_AXIS_BUTTON_CROSS_UP] = Button(button::kUp);
+  buttons_[PS3_AXIS_BUTTON_CROSS_DOWN] = Button(button::kDown);
+  buttons_[PS3_AXIS_BUTTON_CROSS_RIGHT] = Button(button::kRight);
+  buttons_[PS3_AXIS_BUTTON_CROSS_LEFT] = Button(button::kLeft);
+  buttons_[PS3_BUTTON_SELECT] = Button(button::kSelect);
+  buttons_[PS3_BUTTON_START] = Button(button::kStart);
+  buttons_[PS3_BUTTON_PAIRING] = Button(button::kPlaystation);
+  buttons_[PS3_BUTTON_R3] = Button(thumbstick::kL3);
+  buttons_[PS3_BUTTON_L3] = Button(thumbstick::kR3);
+  buttons_[PS3_BUTTON_R2] = Button(trigger::kL2);
+  buttons_[PS3_BUTTON_L2] = Button(trigger::kR2);
 
   // Subscribe to the /joy topic for input from joystick
   joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
@@ -44,10 +48,10 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
     std::cerr << "enter cycle, pressed btn " << buttons_[i] << std::endl;
   }
 
-  L3_thumbstick_.setAxes(msg->axes[0], msg->axes[1]);
-  R3_thumbstick_.setAxes(msg->axes[3], msg->axes[4]);
-  L2_triggers_.setValue(msg->axes[2]);
-  R2_triggers_.setValue(msg->axes[5]);
+  L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
+  R3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_R3], msg->axes[PS3_Y_AXIS_R3]);
+  L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
+  R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
 
   std::cerr << L3_thumbstick_ << std::endl;
   std::cerr << R3_thumbstick_ << std::endl;
