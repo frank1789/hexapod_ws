@@ -1,7 +1,6 @@
 #include "joypad_trigger.h"
 
 #include <iomanip>
-#include <iostream>
 
 Trigger::Trigger(const std::string& name)
     : ts_name_(name), raw_value_(0.0), value_(0.0) {}
@@ -19,8 +18,7 @@ void Trigger::setName(const std::string& name) { ts_name_ = name; }
 double Trigger::getValue() const { return value_; }
 
 // clang-format off
-constexpr double Trigger::normalize(double value) {
-  std::cerr << "raw value: " << value << " ready to scale" << std::endl;
+double Trigger::normalize(double value) {
   return (((value - kValueMin_) / ((kValueMax_ - kValueMin_) * (kMax_ - kMin_))) + kMin_);
 }
 // clang-format on

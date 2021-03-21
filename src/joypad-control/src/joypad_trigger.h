@@ -12,7 +12,7 @@ class Trigger {
 
   // setter methods
   void setValue(double value);
-  void setName(const std::string &name);
+  void setName(const std::string& name);
 
   // getter methods
   double getValue() const;
@@ -21,7 +21,7 @@ class Trigger {
   friend std::ostream& operator<<(std::ostream& os, const Trigger& ts);
 
  private:
-  static constexpr double normalize(double value);
+  double normalize(double value);
 
  private:
   std::string ts_name_;
