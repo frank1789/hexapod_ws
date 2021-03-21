@@ -14,7 +14,7 @@ void Trigger::setValue(double value) {
 double Trigger::getValue() const { return value_; }
 
 // clang-format off
-constexpr double Trigger::normalize(double value) {
+double Trigger::normalize(double value) {
   return (((value - kValueMin_) / (kValueMax_ - kValueMin_)) * (kMax_ - kMin_)) + kMin_;
 }
 // clang-format on

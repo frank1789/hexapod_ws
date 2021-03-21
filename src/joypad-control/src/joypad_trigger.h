@@ -6,7 +6,7 @@
 
 class Trigger {
  public:
- explicit Trigger() = default;
+  explicit Trigger() = default;
   explicit Trigger(const std::string& name);
   explicit Trigger(const std::string& name, double value);
 
@@ -19,8 +19,8 @@ class Trigger {
   // accessory function
   friend std::ostream& operator<<(std::ostream& os, const Trigger& ts);
 
-private:
-    static constexpr double normalize(double value); 
+ private:
+  double normalize(double value);
 
  private:
   std::string ts_name_;
@@ -34,4 +34,4 @@ private:
 
 std::ostream& operator<<(std::ostream& os, const Trigger& ts);
 
-#endif // JOYPAD_TRIGGER_H
+#endif  // JOYPAD_TRIGGER_H
