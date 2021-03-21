@@ -12,27 +12,27 @@
 #include "buttonsname.h"
 
 Joypad::Joypad() {
-  triggers_{std::make_pair(6, Trigger(trigger::KL2)), std::make_pair(7, Trigger(trigger::KR2))};
-
-  thumbsticks_{std::make_pair(0, ThumbStick(thumbstick::kL3)),
-               std::make_pair(1, ThumbStick(thumbstick::kL3)),
-               std::make_pair(3, ThumbStick(thumbstick::kR3)),
-               std::make_pair(4, ThumbStick(thumbstick::kR3))};
-  buttons_{
-      std::make_pair(0, Button(button::kCross)),
-      std::make_pair(1, Button(button::kCircle)),
-      std::make_pair(2, Button(button::kTriangle)),
-      std::make_pair(3, Button(button::kSquare)),
-      std::make_pair(4, Button(button::kL1)),
-      std::make_pair(5, Button(button::KR1)),
-      std::make_pair(13, Button(button::kUp)),
-      std::make_pair(14, Button(button::kDown)),
-      std::make_pair(15, Button(button::kRight)),
-      std::make_pair(16, Button(button::kLeft)),
-      std::make_pair(8, Button(button::kSelect)),
-      std::make_pair(9, Button(button::kStart)),
-      std::make_pair(10, Button(button::kPlaystation)),
-  };
+  triggers_[6] = Trigger(trigger::KL2);
+  triggers_[7] = Trigger(trigger::KR2);
+  // init thimbsticks
+  thumbsticks_[0] = ThumbStick(thumbstick::kL3);
+  thumbsticks_[1] = ThumbStick(thumbstick::kL3);
+  thumbsticks_[3] = ThumbStick(thumbstick::kR3);
+  thumbsticks_[4] = ThumbStick(thumbstick::kR3);
+  // init buttons
+  buttons_[0] = Button(button::kCross);
+  buttons_[1] = Button(button::kCircle);
+  buttons_[2] = Button(button::kTriangle);
+  buttons_[3] = Button(button::kSquare);
+  buttons_[4] = Button(button::kL1);
+  buttons_[5] = Button(button::KR1);
+  buttons_[13] = Button(button::kUp);
+  buttons_[14] = Button(button::kDown);
+  buttons_[15] = Button(button::kRight);
+  buttons_[16] = Button(button::kLeft);
+  buttons_[8] = Button(button::kSelect);
+  buttons_[9] = Button(button::kStart);
+  buttons_[10] = Button(button::kPlaystation);
 
   // Subscribe to the /joy topic for input from joystick
   joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
