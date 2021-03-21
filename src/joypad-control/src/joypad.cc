@@ -49,7 +49,7 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   std::cerr << R3_thumbstick_ << std::endl;
   std::cerr << L2_triggers_ << std::endl;
   std::cerr << R2_triggers_ << std::endl;
-}
+
 
 // for(const auto a: msg->axes){
 //   std::cerr << "axes:\t" << a << "\n";
