@@ -21,7 +21,7 @@ class Trigger {
   friend std::ostream& operator<<(std::ostream& os, const Trigger& ts);
 
  private:
-  double normalize(double value);
+  static constexpr double normalize(double value);
 
  private:
   std::string ts_name_;
@@ -29,8 +29,8 @@ class Trigger {
   double value_{0.0};
   static constexpr double kMax_{1.0};
   static constexpr double kMin_{0.0};
-  static constexpr double kValueMax_{1.0};
-  static constexpr double kValueMin_{-1.0};
+  static constexpr double kValueMax_{-1.0};
+  static constexpr double kValueMin_{1.0};
 };
 
 std::ostream& operator<<(std::ostream& os, const Trigger& ts);

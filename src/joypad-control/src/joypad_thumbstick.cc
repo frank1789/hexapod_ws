@@ -1,6 +1,7 @@
 #include "joypad_thumbstick.h"
 
 #include <cmath>
+#include <iomanip>
 
 ThumbStick::ThumbStick(const std::string& name)
     : raw_x_axis_(0.0),
@@ -24,9 +25,19 @@ void ThumbStick::setXaxis(double x_axis) {
   x_axis_normalized_ = normalize(x_axis);
 }
 
-void ThumbStick::setYaxis(double y_axis) { raw_y_axis_ = y_axis; }
+void ThumbStick::setYaxis(double y_axis) {
+  // prefer positve 0.0 
+  if (y_axis == -0.0 || y_axis == -0) {
+    y_axis = std::abs(y_axis);
+  }
+  raw_y_axis_ = y_axis;
+}
 
 void ThumbStick::setAxes(double x_axis, double y_axis) {
+  // prefer positve 0.0 
+  if (y_axis == -0.0 || y_axis == -0) {
+    y_axis = std::abs(y_axis);
+  }
   raw_x_axis_ = x_axis;
   raw_y_axis_ = y_axis;
   x_axis_normalized_ = normalize(x_axis);
@@ -52,7 +63,14 @@ double ThumbStick::getMagnitude() const { return magnitude_; }
 
 double ThumbStick::getAngle() const { return angle_; }
 
-double ThumbStick::normalize(double x_axis) { return (x_axis * -1); }
+double ThumbStick::normalize(double axis) {
+  axis = (axis * -1);
+  if (axis == -0.0 || axis == -0 || axis == 0.0 || axis == 0) {
+    axis = std::abs(axis);
+  }
+
+  return axis;
+}
 
 double ThumbStick::computeMagnitude(double x_axis, double y_axis) {
   return std::hypot(x_axis, y_axis);
@@ -63,6 +81,7 @@ double ThumbStick::computeAngle(double x_axis, double y_axis) {
 }
 
 std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
-  return os << tb.tb_name_ << " [" << tb.x_axis_normalized_ << ", "
-            << tb.raw_y_axis_ << "]" << std::endl;
+  os.precision(5);
+  return os << tb.tb_name_ << " [" << std::fixed << tb.x_axis_normalized_
+            << ", " << tb.raw_y_axis_ << "]" << std::endl;
 }
