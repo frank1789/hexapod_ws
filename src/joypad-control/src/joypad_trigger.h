@@ -6,6 +6,7 @@
 
 class Trigger {
  public:
+ explicit Trigger() = default;
   explicit Trigger(const std::string& name);
   explicit Trigger(const std::string& name, double value);
 
@@ -23,8 +24,8 @@ private:
 
  private:
   std::string ts_name_;
-  double raw_value_;
-  double value_;
+  double raw_value_{0.0};
+  double value_{0.0};
   static constexpr double kMax_{1.0};
   static constexpr double kMin_{0.0};
   static constexpr double kValueMax_{1.0};

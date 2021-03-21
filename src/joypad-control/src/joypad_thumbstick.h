@@ -7,6 +7,7 @@
 
 class ThumbStick {
  public:
+  explicit ThumbStick() = default;
   explicit ThumbStick(const std::string& name);
   explicit ThumbStick(const std::string& name, double x_axis, double y_axis);
 
@@ -31,11 +32,11 @@ class ThumbStick {
   inline double computeAngle(double x_axis, double y_axis);
 
  private:
-  double raw_x_axis_;
-  double raw_y_axis_;
-  double x_axis_normalized_;
-  double magnitude_;
-  double angle_;
+  double raw_x_axis_{0.0};
+  double raw_y_axis_{0.0};
+  double x_axis_normalized_{0.0};
+  double magnitude_{0.0};
+  double angle_{0.0};
   std::string tb_name_;
 };
 
