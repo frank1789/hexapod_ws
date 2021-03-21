@@ -12,13 +12,6 @@
 #include "buttonsname.h"
 
 Joypad::Joypad() {
-  triggers_[6] = Trigger(trigger::KL2);
-  triggers_[7] = Trigger(trigger::KR2);
-  // init thimbsticks
-  thumbsticks_[0] = ThumbStick(thumbstick::kL3);
-  thumbsticks_[1] = ThumbStick(thumbstick::kL3);
-  thumbsticks_[3] = ThumbStick(thumbstick::kR3);
-  thumbsticks_[4] = ThumbStick(thumbstick::kR3);
   // init buttons
   buttons_[0] = Button(button::kCross);
   buttons_[1] = Button(button::kCircle);
@@ -42,35 +35,33 @@ Joypad::Joypad() {
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
 
-  for (int i = 0; i < msg->buttons.size() ; i++) {
+  for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
     std::cerr << "enter cycle, pressed btn " << buttons_[i] << std::endl;
   }
 
-  for(int k = 0; k < msg->axes.size(); k++){
-    thumbsticks_[k].setXaxis(msg->axes[k]);
-    thumbsticks_[k].setYaxis(msg->axes[k]);
-    triggers_[k].setValue(msg->axes[k]);
+  L3_thumbstick_.setAxes(msg->axes[0], msg->axes[1]);
+  R3_thumbstick_.setAxes(msg->axes[3], msg->axes[4]);
+  L2_triggers_.setValue(msg->axes[2]);
+  R2_triggers_.setValue(msg->axes[5]);
 
-    std::cerr << thumbsticks_[k] <<std::endl;
-  
-  
-  
-  
-  
-  }
+  std::cerr << L3_thumbstick_ << std::endl;
+  std::cerr << R3_thumbstick_ << std::endl;
+  std::cerr << L2_triggers_ << std::endl;
+  std::cerr << R2_triggers_ << std::endl;
+}
 
-  // for(const auto a: msg->axes){
-  //   std::cerr << "axes:\t" << a << "\n";
-  // }
+// for(const auto a: msg->axes){
+//   std::cerr << "axes:\t" << a << "\n";
+// }
 
-  // if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
-  //   ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
-  // }
-  // if (msg->buttons[PS3_BUTTON_SELECT]) {
-  //   ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
-  // }
-  // if (msg->buttons[PS3_BUTTON_START]) {
-  //   ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
-  // }
+// if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
+//   ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
+// }
+// if (msg->buttons[PS3_BUTTON_SELECT]) {
+//   ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
+// }
+// if (msg->buttons[PS3_BUTTON_START]) {
+//   ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
+// }
 }
