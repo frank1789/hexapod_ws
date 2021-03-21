@@ -23,10 +23,10 @@ Joypad::Joypad() {
   buttons_[PS3_BUTTON_ACTION_SQUARE] = Button(button::kSquare);
   buttons_[PS3_BUTTON_L1] = Button(button::kL1);
   buttons_[PS3_BUTTON_R1] = Button(button::KR1);
-  buttons_[PS3_AXIS_BUTTON_CROSS_UP] = Button(button::kUp);
-  buttons_[PS3_AXIS_BUTTON_CROSS_DOWN] = Button(button::kDown);
-  buttons_[PS3_AXIS_BUTTON_CROSS_RIGHT] = Button(button::kRight);
-  buttons_[PS3_AXIS_BUTTON_CROSS_LEFT] = Button(button::kLeft);
+  buttons_[PS3_BUTTON_CROSS_UP] = Button(button::kUp);
+  buttons_[PS3_BUTTON_CROSS_DOWN] = Button(button::kDown);
+  buttons_[PS3_BUTTON_CROSS_RIGHT] = Button(button::kRight);
+  buttons_[PS3_BUTTON_CROSS_LEFT] = Button(button::kLeft);
   buttons_[PS3_BUTTON_SELECT] = Button(button::kSelect);
   buttons_[PS3_BUTTON_START] = Button(button::kStart);
   buttons_[PS3_BUTTON_PAIRING] = Button(button::kPlaystation);
