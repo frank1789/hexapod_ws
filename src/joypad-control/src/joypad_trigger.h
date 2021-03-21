@@ -32,6 +32,6 @@ private:
   static constexpr double kValueMin_{-1.0};
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Trigger& ts);
+std::ostream& operator<<(std::ostream& os, const Trigger& ts);
 
 #endif // JOYPAD_TRIGGER_H

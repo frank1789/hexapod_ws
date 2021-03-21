@@ -40,6 +40,6 @@ class ThumbStick {
   std::string tb_name_;
 };
 
-inline std::ostream& operator<<(std::ostream& os, const ThumbStick& tb);
+std::ostream& operator<<(std::ostream& os, const ThumbStick& tb);
 
 #endif  // JOYPAD_THUMBSTICK_H
