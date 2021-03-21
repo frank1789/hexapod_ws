@@ -12,7 +12,7 @@
 #include "buttonsname.h"
 
 std::unordered_map<int, Trigger> Joypad::triggers_{{6, Trigger(trigger::KL2)},
-                                                   {7, Trigger(trigger::KR2)};
+                                                   {7, Trigger(trigger::KR2)}};
 
 std::unordered_map<int, ThumbStick> Joypad::thumbsticks_{{0, ThumbStick(thumbstick::kL3)},
                                                          {1, ThumbStick(thumbstick::kL3)},
