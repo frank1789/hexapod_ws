@@ -9,6 +9,10 @@
 #include <string>
 #include <unordered_map>
 
+#include "joypad_button.h"
+#include "joypad_thumbstick.h"
+#include "joypad_trigger.h"
+
 class Joypad {
  public:
   explicit Joypad();
@@ -17,10 +21,9 @@ class Joypad {
   static void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
 
  private:
-  static std::unordered_map<uint8_t, std::string> triggers_;
-  static std::unordered_map<uint8_t, std::string> thumbsticks_;
-  static std::unordered_map<uint8_t, std::string> buttons_;
-  static std::unordered_map<uint8_t, std::string> special_;
+  static std::unordered_map<int, Trigger> triggers_;
+  static std::unordered_map<int, ThumbStick> thumbsticks_;
+  static std::unordered_map<int, Button> buttons_;
 
   ros::NodeHandle node_handler_;
   ros::Subscriber joy_subriber_;

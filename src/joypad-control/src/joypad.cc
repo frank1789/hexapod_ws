@@ -1,5 +1,7 @@
 #include "joypad.h"
 
+#include <sstream>
+
 #include <ros/console.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/JoyFeedbackArray.h>
@@ -9,30 +11,25 @@
 
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
-#include "joypad_button.h"
-#include "joypad_thumbstick.h"
-#include "joypad_trigger.h"
 
-std::unordered_map<uint8_t, std::string> Joypad::triggers_{{6, trigger::KL2},
+std::unordered_map<uint8_t, Trigger> Joypad::triggers_{{6, trigger::KL2},
                                                            {7, trigger::KR2}};
 
-std::unordered_map<uint8_t, std::string> Joypad::thumbsticks_{
+std::unordered_map<uint8_t, ThumbStick> Joypad::thumbsticks_{
     {0, thumbstick::kL3},
     {1, thumbstick::kL3},
     {3, thumbstick::kR3},
     {4, thumbstick::kR3}};
 
-std::unordered_map<uint8_t, std::string> Joypad::buttons_{
-    {0, button::kCross},  {1, button::kCircle}, {2, button::kTriangle},
-    {3, button::kSquare}, {4, button::kL1},     {5, button::KR1},
-    {13, button::kUp},    {14, button::kDown},  {15, button::kRight},
-    {16, button::kLeft},
-};
-
-std::unordered_map<uint8_t, std::string> Joypad::special_{
-    {8, button::kSelect},
-    {9, button::kStart},
-    {10, button::kPlaystation},
+std::unordered_map<int, Button> Joypad::buttons_{
+    {0, Button(button::kCross)},    {1, Button(button::kCircle)},
+    {2, Button(button::kTriangle)}, {3, Button(button::kSquare)},
+    {4, Button(button::kL1)},       {5, Button(button::KR1)},
+    {13, Button(button::kUp)},      {14, Button(button::kDown)},
+    {15, Button(button::kRight)},   {16, Button(button::kLeft)},
+    {8,   Button(button::kSelect)},
+    {9,   Button(button::kStart)},
+    {10,  Button(button::kPlaystation)},
 };
 
 Joypad::Joypad() {
@@ -44,28 +41,23 @@ Joypad::Joypad() {
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
 
-  ROS_INFO_STREAM(std::to_string(msg->axes[PS3_AXIS_BUTTON_REAR_LEFT_2]));
-
-  std::cerr << "axes " << msg->axes.size() << std::endl;
-  std::cerr << "buttons " << msg->buttons.size() << std::endl;
-  for(const auto b: msg->buttons){
-    std::cerr << "button:\t" << b << "\n";
+  for (int i = 0; msg->buttons.size(); i++) {
+    auto btn = Joypad::buttons_[i];
+    btn.setButton(msg->buttons[i]);
+    ROS_DEBUG_STREAM(btn)
   }
 
-  for(const auto a: msg->axes){
-    std::cerr << "axes:\t" << a << "\n";
-  }
-  
-  
-  
-  
-  if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
-    ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
-  }
-  if (msg->buttons[PS3_BUTTON_SELECT]) {
-    ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
-  }
-  if (msg->buttons[PS3_BUTTON_START]) {
-    ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
-  }
+  // for(const auto a: msg->axes){
+  //   std::cerr << "axes:\t" << a << "\n";
+  // }
+
+  // if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
+  //   ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
+  // }
+  // if (msg->buttons[PS3_BUTTON_SELECT]) {
+  //   ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
+  // }
+  // if (msg->buttons[PS3_BUTTON_START]) {
+  //   ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
+  // }
 }
