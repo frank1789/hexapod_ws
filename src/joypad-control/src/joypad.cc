@@ -47,6 +47,19 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
     std::cerr << "enter cycle, pressed btn " << buttons_[i] << std::endl;
   }
 
+  for(int k = 0; k < msg->axes.size(); k++){
+    thumbsticks_[k].setXaxis(msg->axes[k]);
+    thumbsticks_[k].setYaxis(msg->axes[k]);
+    triggers_[k].setValue(msg->axes[k]);
+
+    std::cerr << thumbsticks_[k] <<std::endl;
+  
+  
+  
+  
+  
+  }
+
   // for(const auto a: msg->axes){
   //   std::cerr << "axes:\t" << a << "\n";
   // }
