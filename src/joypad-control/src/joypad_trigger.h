@@ -12,6 +12,7 @@ class Trigger {
 
   // setter methods
   void setValue(double value);
+  void setName(const std::string &name);
 
   // getter methods
   double getValue() const;

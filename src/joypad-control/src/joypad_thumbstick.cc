@@ -34,6 +34,8 @@ void ThumbStick::setAxes(double x_axis, double y_axis) {
   angle_ = computeAngle(x_axis_normalized_, y_axis);
 }
 
+void ThumbStick::setName(const std::string& name) { tb_name_ = name; }
+
 std::tuple<double, double> ThumbStick::getRawAxesValues() const {
   return std::make_tuple(raw_x_axis_, raw_y_axis_);
 }
@@ -61,6 +63,6 @@ double ThumbStick::computeAngle(double x_axis, double y_axis) {
 }
 
 std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
-  return os << tb.tb_name_ << " [" << tb.x_axis_normalized_ << ", " << tb.raw_y_axis_
-            << "]" << std::endl;
+  return os << tb.tb_name_ << " [" << tb.x_axis_normalized_ << ", "
+            << tb.raw_y_axis_ << "]" << std::endl;
 }

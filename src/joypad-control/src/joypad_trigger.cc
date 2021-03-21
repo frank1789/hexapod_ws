@@ -11,6 +11,8 @@ void Trigger::setValue(double value) {
   value_ = normalize(value_);
 }
 
+void Trigger::setName(const std::string& name) { ts_name_ = name; }
+
 double Trigger::getValue() const { return value_; }
 
 // clang-format off

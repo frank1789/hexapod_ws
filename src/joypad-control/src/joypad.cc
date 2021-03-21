@@ -12,6 +12,10 @@
 #include "buttonsname.h"
 
 Joypad::Joypad() {
+  L3_thumbstick_.setName(thumbstick::kL3);
+  R3_thumbstick_.setName(thumbstick::kR3);
+  L2_triggers_.setName(trigger::kL2);
+  R2_triggers_.setName(trigger::kR2);
   // init buttons
   buttons_[0] = Button(button::kCross);
   buttons_[1] = Button(button::kCircle);
@@ -49,19 +53,4 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   std::cerr << R3_thumbstick_ << std::endl;
   std::cerr << L2_triggers_ << std::endl;
   std::cerr << R2_triggers_ << std::endl;
-
-
-// for(const auto a: msg->axes){
-//   std::cerr << "axes:\t" << a << "\n";
-// }
-
-// if (msg->axes[PS3_AXIS_STICK_LEFT_UPWARDS]) {
-//   ROS_DEBUG("Press %s", Joypad::thumbsticks_[0].c_str());
-// }
-// if (msg->buttons[PS3_BUTTON_SELECT]) {
-//   ROS_DEBUG("Press %s", Joypad::special_[8].c_str());
-// }
-// if (msg->buttons[PS3_BUTTON_START]) {
-//   ROS_DEBUG("Press %s", Joypad::special_[10].c_str());
-// }
 }

@@ -37,8 +37,8 @@
 using cstring_t = const char*;
 
 namespace trigger {
-constexpr cstring_t KL2 = "L2";
-constexpr cstring_t KR2 = "R2";
+constexpr cstring_t kL2 = "L2";
+constexpr cstring_t kR2 = "R2";
 }  // namespace trigger
 
 namespace thumbstick {

@@ -15,6 +15,7 @@ class ThumbStick {
   void setXaxis(double x_axis);
   void setYaxis(double y_axis);
   void setAxes(double x_axis, double y_axis);
+  void setName(const std::string &name);
 
   // getter methods
   std::tuple<double, double> getRawAxesValues() const;
