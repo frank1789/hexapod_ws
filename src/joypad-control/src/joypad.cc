@@ -1,35 +1,32 @@
 #include "joypad.h"
 
-#include <sstream>
-
 #include <ros/console.h>
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/JoyFeedbackArray.h>
 
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
 
-std::unordered_map<int, Trigger> Joypad::triggers_{{6, trigger::KL2},
-                                                           {7, trigger::KR2}};
+std::unordered_map<int, Trigger> Joypad::triggers_{{6, Trigger(trigger::KL2}),
+                                                   {7, Trigger(trigger::KR2})};
 
-std::unordered_map<int, ThumbStick> Joypad::thumbsticks_{
-    {0, thumbstick::kL3},
-    {1, thumbstick::kL3},
-    {3, thumbstick::kR3},
-    {4, thumbstick::kR3}};
+std::unordered_map<int, ThumbStick> Joypad::thumbsticks_{{0, ThumbStick(thumbstick::kL3}),
+                                                         {1, ThumbStick(thumbstick::kL3}),
+                                                         {3, ThumbStick(thumbstick::kR3}),
+                                                         {4, ThumbStick(thumbstick::kR3})};
 
 std::unordered_map<int, Button> Joypad::buttons_{
-    {0, Button(button::kCross)},    {1, Button(button::kCircle)},
-    {2, Button(button::kTriangle)}, {3, Button(button::kSquare)},
-    {4, Button(button::kL1)},       {5, Button(button::KR1)},
-    {13, Button(button::kUp)},      {14, Button(button::kDown)},
-    {15, Button(button::kRight)},   {16, Button(button::kLeft)},
-    {8,   Button(button::kSelect)},
-    {9,   Button(button::kStart)},
-    {10,  Button(button::kPlaystation)},
+    {0, Button(button::kCross)},        {1, Button(button::kCircle)},
+    {2, Button(button::kTriangle)},     {3, Button(button::kSquare)},
+    {4, Button(button::kL1)},           {5, Button(button::KR1)},
+    {13, Button(button::kUp)},          {14, Button(button::kDown)},
+    {15, Button(button::kRight)},       {16, Button(button::kLeft)},
+    {8, Button(button::kSelect)},       {9, Button(button::kStart)},
+    {10, Button(button::kPlaystation)},
 };
 
 Joypad::Joypad() {
