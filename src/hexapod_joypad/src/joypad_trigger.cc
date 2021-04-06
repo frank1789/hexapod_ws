@@ -26,5 +26,5 @@ double Trigger::normalize(double value) {
 std::ostream& operator<<(std::ostream& os, const Trigger& ts) {
   os.precision(5);
   return os << "trigger " << ts.ts_name_ << " magnitude: " << std::fixed
-            << ts.value_ << std::endl;
+            << ts.value_;
 }

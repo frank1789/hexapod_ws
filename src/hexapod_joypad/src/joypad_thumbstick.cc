@@ -83,5 +83,5 @@ double ThumbStick::computeAngle(double x_axis, double y_axis) {
 std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
   os.precision(5);
   return os << tb.tb_name_ << " [" << std::fixed << tb.x_axis_normalized_
-            << ", " << tb.raw_y_axis_ << "]" << std::endl;
+            << ", " << tb.raw_y_axis_ << "]";
 }
