@@ -85,13 +85,14 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   // publish
   thumbstick_publisher_.publish(tbs_msg_left);
   thumbstick_publisher_.publish(tbs_msg_right);
+  // trigger left and right message
   tgr_msg_left.trigger_name = L2_triggers_.getName();
   tgr_msg_left.value = L2_triggers_.getValue();
   tgr_msg_right.trigger_name = R2_triggers_.getName();
   tgr_msg_right.value = R2_triggers_.getValue();
   // publish triggers
-  trigger_publisher_.publish(tbs_msg_left);
-  trigger_publisher_.publish(tbs_msg_right);
+  trigger_publisher_.publish(tgr_msg_left);
+  trigger_publisher_.publish(tgr_msg_right);
   // print information
   ROS_INFO_STREAM(L3_thumbstick_); 
   ROS_INFO_STREAM(R3_thumbstick_); 
