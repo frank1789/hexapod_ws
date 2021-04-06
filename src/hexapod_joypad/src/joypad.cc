@@ -56,8 +56,11 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
     ROS_INFO_STREAM(buttons_[i]);
-    if(buttons_[i].getValue() != 0){
-      button_publisher_.publish(buttons_[i].getName(), buttons_[i].getValue());
+    if(buttons_[i].getValue() != 0) {
+      hexapod_msgs::JoypadButton btn_msg;
+      btn_msg.button_name = buttons_[i].getName();
+      btn_msg.value = buttons_[i].getValue();
+      button_publisher_.publish(btn_msg);
     }
   }
   // read/remap raw values from thumbsticks and triggers
