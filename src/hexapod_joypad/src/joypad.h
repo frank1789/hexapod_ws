@@ -22,9 +22,6 @@ class Joypad {
 
  private:
   void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
-  void msgButtonCallback(const hexapod_msg::JoypadButton& msg);
-  void msgThumbstickCallback(const hexapod_msg::JoypadThumbstick& msg);
-  void msgTriggerCallback(const hexapod_msg::JoypadTrigger& msg);
 
  private:
   Trigger L2_triggers_;

@@ -37,11 +37,13 @@ Joypad::Joypad() {
   joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
       "joy", 1, &Joypad::controllerCallback, this);
 
-
-
-  trigger_publisher_    = node_handler_.advertise<hexapod_msg::JoypadTrigger >("joypad/trigger", 1);
-  thumbstick_publisher_ = node_handler_.advertise<hexapod_msg::JoypadThumbstick >("joypad/thumbstick", 1);
-  button_publisher_     = node_handler_.advertise<hexapod_msg::JoypadButton >("joypad/button", 1);
+  trigger_publisher_ =
+      node_handler_.advertise<hexapod_msg::JoypadTrigger>("joypad/trigger", 1);
+  thumbstick_publisher_ =
+      node_handler_.advertise<hexapod_msg::JoypadThumbstick>(
+          "joypad/thumbstick", 1);
+  button_publisher_ =
+      node_handler_.advertise<hexapod_msg::JoypadButton>("joypad/button", 1);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
