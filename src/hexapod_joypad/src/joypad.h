@@ -9,6 +9,9 @@
 #include <string>
 #include <unordered_map>
 
+#include "hexapod_msg/JoypadButton.h"
+#include "hexapod_msg/JoypadThumbstick.h"
+#include "hexapod_msg/JoypadTrigger.h"
 #include "joypad_button.h"
 #include "joypad_thumbstick.h"
 #include "joypad_trigger.h"
@@ -32,9 +35,9 @@ class Joypad {
 
   ros::NodeHandle node_handler_;
   ros::Subscriber joy_subriber_;
-  ros::Publisher  trigger_publisher_;
-  ros::Publisher  thumbstick_publisher_;
-  ros::Publisher  button_publisher_;
+  ros::Publisher trigger_publisher_;
+  ros::Publisher thumbstick_publisher_;
+  ros::Publisher button_publisher_;
 };
 
 #endif  // JOYPAD_H
