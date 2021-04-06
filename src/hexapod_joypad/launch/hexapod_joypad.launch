@@ -7,6 +7,6 @@
     <param name="coalesce_interval" value="0.02" />
   </node>
 
- <node name="controller_node" pkg="hexapod_joypad" type="teleop_joy"/>
+ <node name="controller_node" pkg="hexapod_joypad" type="controller_node"/>
 
 </launch>
