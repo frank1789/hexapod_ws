@@ -45,7 +45,7 @@ Joypad::Joypad() {
       "joy", 1, &Joypad::controllerCallback, this);
 
   trigger_publisher_ =
-      node_handler_.advertise<hexapod_msgs::JoypadTrigger>(topic_tgs, 1);
+      node_handler_.advertise<hexapod_msgs::JoypadTrigger>(topic_trg, 1);
   thumbstick_publisher_ =
       node_handler_.advertise<hexapod_msgs::JoypadThumbstick>(topic_tbs, 1);
   button_publisher_ = node_handler_.advertise<hexapod_msgs::JoypadButton>(topic_btn, 1);
@@ -56,8 +56,8 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
     ROS_INFO_STREAM(buttons_[i]);
-    if(button_[i].getValue() != 0){
-      button_publisher_.publish(button_[i].getName(), button_[i].getValue());
+    if(buttons_[i].getValue() != 0){
+      button_publisher_.publish(buttons_[i].getName(), buttons_[i].getValue());
     }
   }
   // read/remap raw values from thumbsticks and triggers
