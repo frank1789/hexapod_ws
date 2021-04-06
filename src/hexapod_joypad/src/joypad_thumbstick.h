@@ -18,6 +18,7 @@ class ThumbStick {
   void setName(const std::string &name);
 
   // getter methods
+  std::string getName() const;
   std::tuple<double, double> getRawAxesValues() const;
   std::tuple<double, double> getAxesValues() const;
   std::tuple<double, double> getVectorAxisAngle() const;

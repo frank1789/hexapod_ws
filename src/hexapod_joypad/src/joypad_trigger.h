@@ -15,6 +15,7 @@ class Trigger {
   void setName(const std::string& name);
 
   // getter methods
+  std::string getName() const;
   double getValue() const;
 
   // accessory function

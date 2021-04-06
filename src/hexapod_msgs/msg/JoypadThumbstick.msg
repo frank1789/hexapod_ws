@@ -1,0 +1,6 @@
+string thumbstick_name
+float64 x_axis
+float64 y_axis
+float64 vector_magnitute
+float64 vector_angle_rad
+float64 vector_angle_degree

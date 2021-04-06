@@ -28,7 +28,10 @@ class Joypad {
   std::unordered_map<int, Button> buttons_;
 
   ros::NodeHandle node_handler_;
-  ros::Subscriber joy_subriber_;
+  ros::Subscriber joy_subscriber_;
+  ros::Publisher trigger_publisher_;
+  ros::Publisher thumbstick_publisher_;
+  ros::Publisher button_publisher_;
 };
 
 #endif  // JOYPAD_H

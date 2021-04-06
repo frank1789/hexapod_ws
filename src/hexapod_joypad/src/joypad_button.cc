@@ -19,5 +19,5 @@ std::string Button::getName() const { return bt_name_; }
 
 std::ostream& operator<<(std::ostream& os, const Button& bt) {
   auto status = bt.pressed_ == 1 ? "pressed" : "false";
-  return os << bt.bt_name_ << " [" << status << "]" << std::endl;
+  return os << bt.bt_name_ << " [" << status << "]";
 }
