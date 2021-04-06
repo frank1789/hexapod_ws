@@ -41,14 +41,15 @@ Joypad::Joypad() {
   buttons_[PS3_BUTTON_L2] = Button(trigger::kR2);
 
   // Subscribe to the /joy topic for input from joystick
-  joy_subriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
+  joy_subscriber_ = node_handler_.subscribe<sensor_msgs::Joy>(
       "joy", 1, &Joypad::controllerCallback, this);
 
   trigger_publisher_ =
       node_handler_.advertise<hexapod_msgs::JoypadTrigger>(topic_trg, 1);
   thumbstick_publisher_ =
       node_handler_.advertise<hexapod_msgs::JoypadThumbstick>(topic_tbs, 1);
-  button_publisher_ = node_handler_.advertise<hexapod_msgs::JoypadButton>(topic_btn, 1);
+  button_publisher_ =
+      node_handler_.advertise<hexapod_msgs::JoypadButton>(topic_btn, 1);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
@@ -56,7 +57,7 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
     ROS_INFO_STREAM(buttons_[i]);
-    if(buttons_[i].getValue() != 0) {
+    if (buttons_[i].getValue() != 0) {
       hexapod_msgs::JoypadButton btn_msg;
       btn_msg.button_name = buttons_[i].getName();
       btn_msg.value = buttons_[i].getValue();
@@ -74,7 +75,7 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
   R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
   // clang-format off
-  // send update values left 
+  // send update values left
   tbs_msg_left.thumbstick_name = L3_thumbstick_.getName();
   std::tie(tbs_msg_left.x_axis, tbs_msg_left.y_axis) = L3_thumbstick_.getAxesValues();
   std::tie(tbs_msg_left.vector_magnitute, tbs_msg_left.vector_angle) = L3_thumbstick_.getVectorAxisAngle();
@@ -82,6 +83,7 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   tbs_msg_right.thumbstick_name = R3_thumbstick_.getName();
   std::tie(tbs_msg_right.x_axis, tbs_msg_right.y_axis) = R3_thumbstick_.getAxesValues();
   std::tie(tbs_msg_right.vector_magnitute, tbs_msg_right.vector_angle) = R3_thumbstick_.getVectorAxisAngle();
+  // clang-format on
   // publish
   thumbstick_publisher_.publish(tbs_msg_left);
   thumbstick_publisher_.publish(tbs_msg_right);
@@ -94,8 +96,8 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   trigger_publisher_.publish(tgr_msg_left);
   trigger_publisher_.publish(tgr_msg_right);
   // print information
-  ROS_INFO_STREAM(L3_thumbstick_); 
-  ROS_INFO_STREAM(R3_thumbstick_); 
-  ROS_INFO_STREAM(L2_triggers_); 
+  ROS_INFO_STREAM(L3_thumbstick_);
+  ROS_INFO_STREAM(R3_thumbstick_);
+  ROS_INFO_STREAM(L2_triggers_);
   ROS_INFO_STREAM(R2_triggers_);
 }

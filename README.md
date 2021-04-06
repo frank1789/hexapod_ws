@@ -5,6 +5,7 @@
     - [Map buttons](#map-buttons)
     - [Map axes](#map-axes)
     - [Connect PS3 joypad](#connect-ps3-joypad)
+  - [Hexapod Messages](#hexapod-messages)
 
 ## Package hexapod_joypad
 
@@ -70,3 +71,24 @@ axes: [-0.0, -0.0, 1.0, -0.0, -0.0, 1.0]
 ### Connect PS3 joypad
 
 Follow the [guide](https://pimylifeup.com/raspberry-pi-playstation-controllers/).
+
+## Hexapod Messages
+
+To subscribe to topics use the following strings:
+
+- Joypad
+  - joypad/button
+  - joypad/thumbstick
+  - joypad/trigger
+
+example for read custom message from joypad:
+
+```cpp
+const std::string topic_btn{"joypad/button"};
+const std::string topic_tbs{"joypad/thumbstick"};
+const std::string topic_trg{"joypad/trigger"};
+
+// stuff
+subscriber_ = node_handler_.subscribe<hexapod_msgs::JoypadTrigger>(
+      topic_btn, 1, &Clss::functionCallback, this);
+```
