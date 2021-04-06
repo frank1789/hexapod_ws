@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>joypad-control</name>
-  <version>0.0.0</version>
-  <description>The joypad-control package</description>
+  <name>hexapod_joypad</name>
+  <version>0.1.0</version>
+  <description>The joypad interface package that permit control hexapod by ps3 pad</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="francesco.argentieri89@gmail.com">francesco</maintainer>
+  <maintainer email="francesco.argentieri89@gmail.com">Francesco Argentieri</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
