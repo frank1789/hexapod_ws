@@ -60,5 +60,5 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
      << " " 
      << R2_triggers_ << "\n";
   // clang-format on
-  ROS_INFO_STREAM(ss.str().c_str())
+  ROS_INFO_STREAM(ss.str().c_str());
 }
