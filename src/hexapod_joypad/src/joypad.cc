@@ -63,14 +63,40 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
       button_publisher_.publish(btn_msg);
     }
   }
+  // init msg variables
+  hexapod_msgs::Thumbstick tbs_msg_left;
+  hexapod_msgs::Thumbstick tbs_msg_right;
+  hexapod_msgs::Trigger tgr_msg_left;
+  hexapod_msgs::Trigger tgr_msg_right;
   // read/remap raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
   R3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_R3], msg->axes[PS3_Y_AXIS_R3]);
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
   R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
   // clang-format off
+  // sends update value
+  tbs_msg_left.thumbstick_name = L3_thumbstick_.getName();
+  std::tie(tbs_msg_left.x_axis, tbs_msg_left.y_axis) = L3_thumbstick_.getAxesValues();
+  std::tie(tbs_msg_left.vector_magnitute, tbs_msg_left.vector_angle) = L3_thumbstick_.getVectorAxisAngle();
+
+  tbs_msg_right.thumbstick_name = L3_thumbstick_.getName();
+  std::tie(tbs_msg_right.x_axis, tbs_msg_right.y_axis) = R3_thumbstick_.getAxesValues();
+  std::tie(tbs_msg_right.vector_magnitute, tbs_msg_right.vector_angle) = R3_thumbstick_.getVectorAxisAngle();
+
+
+
+
+
+
+
+  tgr_msg_left.trigger_name = L2_triggers_.getName();
+  tgr_msg_left.value = L2_triggers_.getValue();
+  tgr_msg_right.trigger_name = R2_triggers_.getName();
+  tgr_msg_right.value = R2_triggers_.getValue();
+  // print information
   ROS_INFO_STREAM(L3_thumbstick_); 
   ROS_INFO_STREAM(R3_thumbstick_); 
   ROS_INFO_STREAM(L2_triggers_); 
-  ROS_INFO_STREAM(R2_triggers_); 
+  ROS_INFO_STREAM(R2_triggers_);
+  
 }
