@@ -12,9 +12,9 @@
 #include "hexapod_msgs/JoypadThumbstick.h"
 #include "hexapod_msgs/JoypadTrigger.h"
 
-constexpr char[] topic_btn{"joypad/button"};
-constexpr char[] topic_tbs{"joypad/thumbstick"};
-constexpr char[] topic_trg{"joypad/trigger"};
+const std::string topic_btn{"joypad/button"};
+const std::string topic_tbs{"joypad/thumbstick"};
+const std::string topic_trg{"joypad/trigger"};
 
 Joypad::Joypad() {
   L3_thumbstick_.setName(thumbstick::kL3);
