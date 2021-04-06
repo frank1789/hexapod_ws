@@ -42,19 +42,23 @@ Joypad::Joypad() {
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
-
+  std::stringstream ss;
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
-    std::cerr << "enter cycle, pressed btn " << buttons_[i] << std::endl;
+    ss << buttons_[i] << std::endl;
   }
-
+  // read raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
   R3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_R3], msg->axes[PS3_Y_AXIS_R3]);
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
   R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
-
-  std::cerr << L3_thumbstick_ << std::endl;
-  std::cerr << R3_thumbstick_ << std::endl;
-  std::cerr << L2_triggers_ << std::endl;
-  std::cerr << R2_triggers_ << std::endl;
+  // clang-format off
+  ss << L3_thumbstick_ 
+     << " " 
+     << R3_thumbstick_ << std::endl
+     << L2_triggers_ 
+     << " " 
+     << R2_triggers_ << std::endl;
+  // clang-format on
+  ROS_INFO_STREAM(ss.str());
 }
