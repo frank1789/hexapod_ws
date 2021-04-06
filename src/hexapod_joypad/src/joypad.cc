@@ -45,9 +45,9 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   std::stringstream ss;
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
-    ss << buttons_[i] << std::endl;
+    ss << buttons_[i] << "\n";
   }
-  // read raw values from thumbsticks and triggers
+  // read/remap raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
   R3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_R3], msg->axes[PS3_Y_AXIS_R3]);
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
@@ -55,10 +55,10 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   // clang-format off
   ss << L3_thumbstick_ 
      << " " 
-     << R3_thumbstick_ << std::endl
+     << R3_thumbstick_ << "\n"
      << L2_triggers_ 
      << " " 
-     << R2_triggers_ << std::endl;
+     << R2_triggers_ << "\n";
   // clang-format on
-  ROS_INFO_STREAM(ss.str());
+  ROS_DEBUG("%s",ss.str().c_str());
 }
