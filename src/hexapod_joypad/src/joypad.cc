@@ -4,8 +4,6 @@
 #include <sensor_msgs/JointState.h>
 #include <sensor_msgs/JoyFeedbackArray.h>
 
-#include <iostream>
-#include <sstream>
 #include <string>
 
 #include "buttonsmap_ps3joy.h"
@@ -42,10 +40,9 @@ Joypad::Joypad() {
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM("Joypad::controllerCallback");
-  std::stringstream ss;
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
-    ss << buttons_[i] << "\n";
+    ROS_INFO_STREAM(buttons_[i]);
   }
   // read/remap raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
@@ -53,12 +50,8 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
   R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
   // clang-format off
-  ss << L3_thumbstick_ 
-     << " " 
-     << R3_thumbstick_ << "\n"
-     << L2_triggers_ 
-     << " " 
-     << R2_triggers_ << "\n";
-  // clang-format on
-  ROS_INFO_STREAM(ss.str().c_str());
+  ROS_INFO_STREAM(L3_thumbstick_); 
+  ROS_INFO_STREAM(R3_thumbstick_); 
+  ROS_INFO_STREAM(L2_triggers_); 
+  ROS_INFO_STREAM(R2_triggers_); 
 }
