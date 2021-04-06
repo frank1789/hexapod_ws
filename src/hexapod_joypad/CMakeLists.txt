@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ps3joy
   joy
+  hexapod_msgs
 )
 
 ## System dependencies are found with CMake's conventions
