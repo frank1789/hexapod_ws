@@ -12,6 +12,10 @@
 #include "hexapod_msgs/JoypadThumbstick.h"
 #include "hexapod_msgs/JoypadTrigger.h"
 
+constexpr char[] topic_btn{"joypad/button"};
+constexpr char[] topic_tbs{"joypad/thumbstick"};
+constexpr char[] topic_trg{"joypad/trigger"};
+
 Joypad::Joypad() {
   L3_thumbstick_.setName(thumbstick::kL3);
   R3_thumbstick_.setName(thumbstick::kR3);
@@ -41,12 +45,10 @@ Joypad::Joypad() {
       "joy", 1, &Joypad::controllerCallback, this);
 
   trigger_publisher_ =
-      node_handler_.advertise<hexapod_msgs::JoypadTrigger>("joypad/trigger", 1);
+      node_handler_.advertise<hexapod_msgs::JoypadTrigger>(topic_tgs, 1);
   thumbstick_publisher_ =
-      node_handler_.advertise<hexapod_msgs::JoypadThumbstick>(
-          "joypad/thumbstick", 1);
-  button_publisher_ =
-      node_handler_.advertise<hexapod_msgs::JoypadButton>("joypad/button", 1);
+      node_handler_.advertise<hexapod_msgs::JoypadThumbstick>(topic_tbs, 1);
+  button_publisher_ = node_handler_.advertise<hexapod_msgs::JoypadButton>(topic_btn, 1);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
@@ -54,6 +56,9 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   for (int i = 0; i < msg->buttons.size(); i++) {
     buttons_[i].setButton(msg->buttons[i]);
     ROS_INFO_STREAM(buttons_[i]);
+    if(button_[i].getValue() != 0){
+      button_publisher_.publish(button_[i].getName(), button_[i].getValue());
+    }
   }
   // read/remap raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
