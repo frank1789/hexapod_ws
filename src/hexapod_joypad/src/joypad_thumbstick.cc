@@ -47,6 +47,10 @@ void ThumbStick::setAxes(double x_axis, double y_axis) {
 
 void ThumbStick::setName(const std::string& name) { tb_name_ = name; }
 
+std::string ThumbStick::getName() const {
+  return tb_name_;
+}
+
 std::tuple<double, double> ThumbStick::getRawAxesValues() const {
   return std::make_tuple(raw_x_axis_, raw_y_axis_);
 }
