@@ -16,6 +16,11 @@ const std::string topic_btn{"joypad/button"};
 const std::string topic_tbs{"joypad/thumbstick"};
 const std::string topic_trg{"joypad/trigger"};
 
+constexpr double kPi  =3.141592653589793238463;
+constexpr double radiantToDeg(double angle){
+  return ((angle * 180) / kPi);
+}
+
 Joypad::Joypad() {
   L3_thumbstick_.setName(thumbstick::kL3);
   R3_thumbstick_.setName(thumbstick::kR3);
@@ -78,11 +83,13 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   // send update values left
   tbs_msg_left.thumbstick_name = L3_thumbstick_.getName();
   std::tie(tbs_msg_left.x_axis, tbs_msg_left.y_axis) = L3_thumbstick_.getAxesValues();
-  std::tie(tbs_msg_left.vector_magnitute, tbs_msg_left.vector_angle) = L3_thumbstick_.getVectorAxisAngle();
+  std::tie(tbs_msg_left.vector_magnitute, tbs_msg_left.vector_angle_rad) = L3_thumbstick_.getVectorAxisAngle();
+  tbs_msg_left.vector_angle_degree = radiantToDeg(tbs_msg_left.vector_angle_rad);
   // send update values right
   tbs_msg_right.thumbstick_name = R3_thumbstick_.getName();
   std::tie(tbs_msg_right.x_axis, tbs_msg_right.y_axis) = R3_thumbstick_.getAxesValues();
-  std::tie(tbs_msg_right.vector_magnitute, tbs_msg_right.vector_angle) = R3_thumbstick_.getVectorAxisAngle();
+  std::tie(tbs_msg_right.vector_magnitute, tbs_msg_right.vector_angle_rad) = R3_thumbstick_.getVectorAxisAngle();
+  tbs_msg_right.vector_angle_degree = radiantToDeg(tbs_msg_right.vector_angle_rad);
   // clang-format on
   // publish
   thumbstick_publisher_.publish(tbs_msg_left);
