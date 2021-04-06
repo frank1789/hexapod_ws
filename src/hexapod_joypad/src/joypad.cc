@@ -16,10 +16,8 @@ const std::string topic_btn{"joypad/button"};
 const std::string topic_tbs{"joypad/thumbstick"};
 const std::string topic_trg{"joypad/trigger"};
 
-constexpr double kPi  =3.141592653589793238463;
-constexpr double radiantToDeg(double angle){
-  return ((angle * 180) / kPi);
-}
+constexpr double kPi = 3.141592653589793238463;
+constexpr double radiantToDeg(double angle) { return ((angle * 180) / kPi); }
 
 Joypad::Joypad() {
   L3_thumbstick_.setName(thumbstick::kL3);
