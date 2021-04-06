@@ -98,5 +98,4 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   ROS_INFO_STREAM(R3_thumbstick_); 
   ROS_INFO_STREAM(L2_triggers_); 
   ROS_INFO_STREAM(R2_triggers_);
-  
 }
