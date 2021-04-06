@@ -9,8 +9,11 @@
 ## Package hexapod_joypad
 
 At present, the hexapod_joypad package remaps the values of the buttons issued by the well-known [ps3joy](http://wiki.ros.org/ps3joy) package.
-The values of the back triggers vary between 0.0 and 1.0
-Thumsticks now follow the Cartesian axis convention, their values vary between -1.0 and 1.0
+
+> Compared to the original package, the documentation does not seem to correspond so the new map of buttons and values is attached.
+
+- The values of the back triggers vary between 0.0 and 1.0
+- Thumsticks now follow the Cartesian axis convention, their values vary between -1.0 and 1.0
 moving them from left to right. Likewise from bottom to top. Consequently the neutral position corresponds to 0.0.
 
 To run the package just run the command from the terminal.
