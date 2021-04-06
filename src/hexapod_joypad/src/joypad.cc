@@ -74,25 +74,24 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
   L2_triggers_.setValue(msg->axes[PS3_TRIGGER_L2]);
   R2_triggers_.setValue(msg->axes[PS3_TRIGGER_R2]);
   // clang-format off
-  // sends update value
+  // send update values left 
   tbs_msg_left.thumbstick_name = L3_thumbstick_.getName();
   std::tie(tbs_msg_left.x_axis, tbs_msg_left.y_axis) = L3_thumbstick_.getAxesValues();
   std::tie(tbs_msg_left.vector_magnitute, tbs_msg_left.vector_angle) = L3_thumbstick_.getVectorAxisAngle();
-
-  tbs_msg_right.thumbstick_name = L3_thumbstick_.getName();
+  // send update values right
+  tbs_msg_right.thumbstick_name = R3_thumbstick_.getName();
   std::tie(tbs_msg_right.x_axis, tbs_msg_right.y_axis) = R3_thumbstick_.getAxesValues();
   std::tie(tbs_msg_right.vector_magnitute, tbs_msg_right.vector_angle) = R3_thumbstick_.getVectorAxisAngle();
-
-
-
-
-
-
-
+  // publish
+  thumbstick_publisher_.publish(tbs_msg_left);
+  thumbstick_publisher_.publish(tbs_msg_right);
   tgr_msg_left.trigger_name = L2_triggers_.getName();
   tgr_msg_left.value = L2_triggers_.getValue();
   tgr_msg_right.trigger_name = R2_triggers_.getName();
   tgr_msg_right.value = R2_triggers_.getValue();
+  // publish triggers
+  trigger_publisher_.publish(tbs_msg_left);
+  trigger_publisher_.publish(tbs_msg_right);
   // print information
   ROS_INFO_STREAM(L3_thumbstick_); 
   ROS_INFO_STREAM(R3_thumbstick_); 
