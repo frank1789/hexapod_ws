@@ -19,6 +19,9 @@ class Joypad {
 
  private:
   void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
+  void msgButtonCallback(const hexapod_msg::JoypadButton& msg);
+  void msgThumbstickCallback(const hexapod_msg::JoypadThumbstick& msg);
+  void msgTriggerCallback(const hexapod_msg::JoypadTrigger& msg);
 
  private:
   Trigger L2_triggers_;
@@ -29,6 +32,9 @@ class Joypad {
 
   ros::NodeHandle node_handler_;
   ros::Subscriber joy_subriber_;
+  ros::Publisher  trigger_publisher_;
+  ros::Publisher  thumbstick_publisher_;
+  ros::Publisher  button_publisher_;
 };
 
 #endif  // JOYPAD_H
