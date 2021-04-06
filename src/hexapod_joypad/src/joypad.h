@@ -9,9 +9,6 @@
 #include <string>
 #include <unordered_map>
 
-#include "hexapod_msgs/JoypadButton.h"
-#include "hexapod_msgs/JoypadThumbstick.h"
-#include "hexapod_msgs/JoypadTrigger.h"
 #include "joypad_button.h"
 #include "joypad_thumbstick.h"
 #include "joypad_trigger.h"

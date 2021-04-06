@@ -8,6 +8,9 @@
 
 #include "buttonsmap_ps3joy.h"
 #include "buttonsname.h"
+#include "hexapod_msgs/JoypadButton.h"
+#include "hexapod_msgs/JoypadThumbstick.h"
+#include "hexapod_msgs/JoypadTrigger.h"
 
 Joypad::Joypad() {
   L3_thumbstick_.setName(thumbstick::kL3);
@@ -38,12 +41,12 @@ Joypad::Joypad() {
       "joy", 1, &Joypad::controllerCallback, this);
 
   trigger_publisher_ =
-      node_handler_.advertise<hexapod_msg::JoypadTrigger>("joypad/trigger", 1);
+      node_handler_.advertise<hexapod_msgs::JoypadTrigger>("joypad/trigger", 1);
   thumbstick_publisher_ =
-      node_handler_.advertise<hexapod_msg::JoypadThumbstick>(
+      node_handler_.advertise<hexapod_msgs::JoypadThumbstick>(
           "joypad/thumbstick", 1);
   button_publisher_ =
-      node_handler_.advertise<hexapod_msg::JoypadButton>("joypad/button", 1);
+      node_handler_.advertise<hexapod_msgs::JoypadButton>("joypad/button", 1);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
