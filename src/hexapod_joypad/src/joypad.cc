@@ -64,10 +64,10 @@ void Joypad::controllerCallback(const sensor_msgs::Joy::ConstPtr& msg) {
     }
   }
   // init msg variables
-  hexapod_msgs::Thumbstick tbs_msg_left;
-  hexapod_msgs::Thumbstick tbs_msg_right;
-  hexapod_msgs::Trigger tgr_msg_left;
-  hexapod_msgs::Trigger tgr_msg_right;
+  hexapod_msgs::JoypadThumbstick tbs_msg_left;
+  hexapod_msgs::JoypadThumbstick tbs_msg_right;
+  hexapod_msgs::JoypadTrigger tgr_msg_left;
+  hexapod_msgs::JoypadTrigger tgr_msg_right;
   // read/remap raw values from thumbsticks and triggers
   L3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_L3], msg->axes[PS3_Y_AXIS_L3]);
   R3_thumbstick_.setAxes(msg->axes[PS3_X_AXIS_R3], msg->axes[PS3_Y_AXIS_R3]);
