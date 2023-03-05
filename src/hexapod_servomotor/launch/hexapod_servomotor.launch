@@ -1,0 +1,5 @@
+<launch>
+  <node name="servomotors" pkg="hexapod_servomotor" type="hexapod_servomotor_node" output="screen">
+    <rosparam file="$(find hexapod_servomotor)/config/servoconfiguration.yaml" />
+  </node>
+</launch>

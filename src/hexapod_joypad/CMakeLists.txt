@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hexapod_description)
+project(hexapod_joypad)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++17)
+add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -11,6 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  ps3joy
+  joy
+  hexapod_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,7 +73,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   std_msgs  # Or other packages containing msgs
 # )
 
 ################################################
@@ -104,8 +107,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES hexapod_description
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES joypad-control
+#  CATKIN_DEPENDS ps3joy
 #  DEPENDS system_lib
 )
 
@@ -122,7 +125,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/hexapod_description.cpp
+#   src/${PROJECT_NAME}/joypad-control.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +136,14 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/hexapod_description_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/joypad-control_node.cpp)
+add_executable(${PROJECT_NAME}_node 
+  src/controller_node.cc
+  src/joypad.cc
+  src/joypad_button.cc
+  src/joypad_thumbstick.cc
+  src/joypad_trigger.cc
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,9 +156,9 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##
@@ -197,7 +207,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_hexapod_description.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_joypad-control.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -1,0 +1,18 @@
+<launch>
+
+  <!-- PS3 joy node -->
+  <node respawn="true" pkg="joy" type="joy_node" name="joy_node">
+    <param name="dev" type="string" value="/dev/input/js0" />
+    <param name="deadzone" value="0.1" />
+    <param name="coalesce_interval" value="0.02" />
+  </node>
+
+  <!-- activate also servomotors-->
+  <node name="servomotors_node" pkg="hexapod_servomotor" type="hexapod_servomotor_node" respawn="true" output="screen">
+    <param name="pwm_frequency" type="double" value="50.0" />
+  </node>
+
+  <!-- Launch controller node to remap value -->
+  <node name="controller_node" pkg="hexapod_joypad" type="hexapod_joypad_node" output="screen" />
+
+</launch>

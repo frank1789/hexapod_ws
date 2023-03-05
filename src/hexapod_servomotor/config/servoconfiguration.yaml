@@ -1,0 +1,43 @@
+# Set the pwm frequency to some value between 40 and 1000
+# 50 is typically used for servos
+pwm_frequency: 50.0
+hexapod: # hexapod motors structure
+  - motors: 
+    - left : 
+      - name: "L_coxaA"   
+        pin: 0
+      - name: "L_femurA" 
+        pin: 1
+      - name: "L_tibiaA" 
+        pin: 2
+      - name: "L_coxaB"   
+        pin: 3
+      - name: "L_femurB"  
+        pin: 4
+      - name: "L_tibiaB"  
+        pin: 5
+      - name: "L_coxaC "  
+        pin: 6
+      - name: "L_femurC"  
+        pin: 7
+      - name: "L_tibiaC"  
+        pin: 8
+    - right : 
+      - name: "L_coxaA"   
+        pin: 0
+      - name: "L_femurA" 
+        pin: 1
+      - name: "L_tibiaA" 
+        pin: 2
+      - name: "L_coxaB"   
+        pin: 3
+      - name: "L_femurB"  
+        pin: 4
+      - name: "L_tibiaB"  
+        pin: 5
+      - name: "L_coxaC "  
+        pin: 6
+      - name: "L_femurC"  
+        pin: 7
+      - name: "L_tibiaC"  
+        pin: 8
