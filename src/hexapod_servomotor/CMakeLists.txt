@@ -1,20 +1,39 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hexapod_description)
+project(hexapod_servomotor)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++17)
+add_compile_options(-std=c++20)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  rospy
   std_msgs
+  hexapod_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(Lua 5.3 REQUIRED)
+include_directories(/usr/local/include ${LUA_INCLUDE_DIR})
+
+find_package(sol2 QUIET)
+if (NOT sol2_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    sol2
+    GIT_REPOSITORY https://github.com/ThePhD/sol2.git
+    GIT_TAG eba86625b707e3c8c99bbfc4624e51f42dc9e561
+  )
+  FetchContent_GetProperties(sol2)
+  if (NOT sol2_POPULATED) # Have we downloaded sol2 yet?
+    set(FETCHCONTENT_QUIET NO)
+    FetchContent_Populate(sol2)
+    add_subdirectory(${sol2_SOURCE_DIR} ${sol2_BINARY_DIR})
+    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${sol2_SOURCE_DIR}/cmake" "${sol2_SOURCE_DIR}/cmake/Modules")
+  endif()
+endif()
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -70,7 +89,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   hexapod_msgs#   std_msgs
 # )
 
 ################################################
@@ -104,8 +123,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES hexapod_description
-#  CATKIN_DEPENDS roscpp rospy std_msgs
+#  LIBRARIES hexapod_servomotor
+#  CATKIN_DEPENDS hexapod_msgs roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
 
@@ -118,11 +137,12 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+  include
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/hexapod_description.cpp
+#   src/${PROJECT_NAME}/hexapod_servomotor.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +153,13 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/hexapod_description_node.cpp)
+add_executable(${PROJECT_NAME}_node
+  src/main.cc
+  src/servocontroller.cc
+  src/i2c-peripheral.cc
+  src/PCA9685_driver.cc
+  src/motor.cc
+)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -146,9 +172,12 @@ include_directories(
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+target_link_libraries(${PROJECT_NAME}_node
+  ${catkin_LIBRARIES}
+  ${LUA_LIBRARIES}
+  i2c
+  sol2
+)
 
 #############
 ## Install ##
@@ -197,7 +226,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_hexapod_description.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_hexapod_servomotor.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
