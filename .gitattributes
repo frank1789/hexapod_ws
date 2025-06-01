@@ -1,0 +1,14 @@
+* text=auto eol=lf
+
+# markdown files
+*.md text diff=markdown
+
+# Windows batch files
+*.bat text eol=crlf
+*ps1 text eol=crlf
+
+# images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

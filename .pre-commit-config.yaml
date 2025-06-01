@@ -1,0 +1,48 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-xml
+
+  # --- C++ Formatting & Linting ---
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v21.1.8
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+        args: ["-i", "--style=file"]
+
+  - repo: local
+    hooks:
+      - id: ament_uncrustify
+        name: ament_uncrustify
+        entry: ament_uncrustify
+        language: system
+        types_or: [c++, c]
+        args: [--reformat]
+
+  # --- Python Formatting via Black ---
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        # Matches ROS 2 Python line length preferences if preferred (default is 100 or 88)
+        args: [--line-length=100]
+
+  # --- ROS 2 Python / Quality System Linters ---
+  - repo: local
+    hooks:
+      - id: ament_flake8
+        name: ament_flake8
+        entry: ament_flake8
+        language: system
+        types: [python]
+
+      - id: ament_copyright
+        name: ament_copyright
+        entry: ament_copyright
+        language: system
+        types_or: [c++, c, python]

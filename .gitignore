@@ -52,6 +52,11 @@ CATKIN_IGNORE
 
 .catkin_workspace
 
+# ROS Build Artifacts
+build
+install
+log
+
 # General
 .DS_Store
 .AppleDouble
