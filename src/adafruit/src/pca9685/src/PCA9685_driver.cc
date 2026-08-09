@@ -2,8 +2,8 @@
 
 #include <chrono>
 #include <cmath>
-#include <thread>
 #include <iostream>
+#include <thread>
 
 #include "servo-driver/PCA9685_register.h"
 
@@ -18,7 +18,7 @@ PCA9685::~PCA9685() = default;
 void PCA9685::Initialize(const std::string& t_device, const uint8_t t_address) {
   m_i2c_device = std::make_unique<i2cPeripheral>(t_device, t_address);
 
-  //SetAllPWM(0, 0);
+  // SetAllPWM(0, 0);
   m_i2c_device->WriteRegisterByte(PCA9685_MODE2, PCA9685_OUTDRV);
   m_i2c_device->WriteRegisterByte(PCA9685_MODE1, PCA9685_ALLCALL);
   std::this_thread::sleep_for(delay);
