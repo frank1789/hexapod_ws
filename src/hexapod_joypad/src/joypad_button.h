@@ -23,8 +23,10 @@ class Button {
   friend std::ostream& operator<<(std::ostream& os, const Button& tb);
 
  private:
-  std::string bt_name_;
-  int pressed_;
+  std::string bt_name_{};
+  // Default constructed buttons are created by the map lookup in Joypad,
+  // so the state has to start defined rather than indeterminate.
+  int pressed_{0};
 };
 
 std::ostream& operator<<(std::ostream& os, const Button& tb);

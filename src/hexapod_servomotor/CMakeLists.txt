@@ -32,22 +32,36 @@ if(NOT sol2_FOUND)
   FetchContent_MakeAvailable(sol2)
 endif()
 
-add_executable(
-  ${PROJECT_NAME}_node src/main.cc src/servocontroller.cc src/i2c-peripheral.cc
-                       src/PCA9685_driver.cc src/motor.cc)
+# Hardware access and the motor model, without the ROS node around them, so the
+# tests can link the same code the robot runs.
+add_library(servomotor_core STATIC src/motor.cc src/i2c-peripheral.cc
+                                   src/PCA9685_driver.cc)
+target_include_directories(servomotor_core PUBLIC include)
+target_link_libraries(servomotor_core PUBLIC rclcpp::rclcpp i2c)
+
+add_executable(${PROJECT_NAME}_node src/main.cc src/servocontroller.cc)
 
 target_include_directories(${PROJECT_NAME}_node PRIVATE include
                                                         ${LUA_INCLUDE_DIR})
 
 target_link_libraries(
-  ${PROJECT_NAME}_node
-  PRIVATE rclcpp::rclcpp ament_index_cpp::ament_index_cpp
-          ${hexapod_msgs_TARGETS} ${LUA_LIBRARIES} sol2 i2c)
+  ${PROJECT_NAME}_node PRIVATE servomotor_core ament_index_cpp::ament_index_cpp
+                               ${hexapod_msgs_TARGETS} ${LUA_LIBRARIES} sol2)
 
 install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 
 # The Lua scripts are read at runtime through
 # ament_index_cpp::get_package_share_directory(), so they must be installed.
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  # Neither test opens the I2C bus: they cover the motor model, the angle
+  # mapping and the argument validation, which all run before any transfer.
+  ament_add_gtest(test_servomotor test/test_motor.cpp test/test_pca9685.cpp)
+  if(TARGET test_servomotor)
+    target_link_libraries(test_servomotor servomotor_core)
+  endif()
+endif()
 
 ament_package()

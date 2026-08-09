@@ -33,6 +33,7 @@
 #define PCA9685_REGISTER_H_
 
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 
 namespace adafruit::pca9685 {
@@ -143,6 +144,47 @@ inline constexpr std::uint8_t kMode1AllCall{0x01}; /**< Respond to the all-call 
 inline constexpr std::uint8_t kMode2Invert{0x10};            /**< Invert the output logic. */
 inline constexpr std::uint8_t kMode2OutputChangeOnAck{0x08}; /**< Update outputs on ACK. */
 inline constexpr std::uint8_t kMode2TotemPole{0x04};         /**< Push-pull outputs; clear means open drain. */
+/** @} */
+
+/**
+ * @name Frequency conversion
+ *
+ * Free functions rather than driver members, so they can be exercised without
+ * a board on the bus.
+ * @{
+ */
+
+/**
+ * @brief Prescaler that produces the requested output frequency.
+ *
+ * From the data sheet, equation 1:
+ * `prescale = round(osc_clock / (4096 * update_rate)) - 1`.
+ *
+ * The result is not clamped; @ref kPrescaleMin still applies and the caller has
+ * to enforce it.
+ *
+ * @param t_frequency requested frequency in hertz
+ * @return the value to write into PRE_SCALE
+ */
+inline std::uint8_t PrescaleFromFrequency(const double t_frequency) {
+  const auto ticks = kOscillatorClockHz / (4096.0 * t_frequency);
+  return static_cast<std::uint8_t>(std::lround(ticks) - 1);
+}
+
+/**
+ * @brief Output frequency a given prescaler produces, in hertz.
+ *
+ * The inverse of @ref PrescaleFromFrequency. Because the prescaler is an
+ * integer, feeding a frequency through both functions does not return it
+ * unchanged: 50 Hz becomes prescale 121, which is 50.14 Hz.
+ *
+ * @param t_prescale value held in PRE_SCALE
+ * @return the frequency in hertz
+ */
+inline constexpr double FrequencyFromPrescale(const std::uint8_t t_prescale) {
+  return kOscillatorClockHz / (4096.0 * (static_cast<double>(t_prescale) + 1.0));
+}
+
 /** @} */
 
 }  // namespace adafruit::pca9685

@@ -35,8 +35,21 @@ Upgrading ROS 2 or clang is a one-line change in `.devcontainer/devcontainer.jso
 `hexapod_servomotor` needs Lua 5.3 headers (`liblua5.3-dev`), `libi2c-dev` and sol2; sol2 is fetched
 via `FetchContent` at configure time when not installed, so the first configure needs network access.
 
-**There are no tests.** If you add some, you are adding the first test infrastructure — don't assume
-a runner exists.
+### Tests
+
+```sh
+colcon test --event-handlers console_direct-        # run everything
+colcon test --packages-select hexapod_servomotor    # one package
+colcon test-result --all --verbose                  # what passed and what did not
+```
+
+Every package has tests and **none of them needs the robot**: they cover the joypad value remapping,
+the motor model and angle mapping, the PCA9685 frequency arithmetic and its argument validation, the
+generated message fields, and the URDF with the meshes it refers to. Anything that would open
+`/dev/i2c-*` is out of scope by design — keep it that way, so the suite stays runnable on a laptop.
+
+`colcon test` succeeds silently when a package builds nothing; always confirm with `test-result`,
+which reports the actual counts.
 
 ## Language standard
 
@@ -135,8 +148,8 @@ by the Lua generator, the homing table, and the driver dispatch, so renaming a m
 
 ## Constitution — how to work in this repository
 
-These rules are binding. They exist because this workspace has no tests, no CI, and drives real
-hardware: nothing downstream will catch a mistake for you.
+These rules are binding. They exist because this workspace has no CI and drives real hardware: the
+test suite is the only automatic check, and it deliberately stops at the edge of the I²C bus.
 
 ### Be analytical, assume nothing
 
@@ -179,6 +192,7 @@ hardware: nothing downstream will catch a mistake for you.
    C/C++ file you touched, then build the affected package:
    ```sh
    colcon build --symlink-install --packages-select <pkg>
+   colcon test --packages-select <pkg> && colcon test-result --all --verbose
    luac5.3 -p src/hexapod_servomotor/config/*.lua   # Lua is executed at runtime; parse it up front
    python3 -m py_compile src/*/launch/*.launch.py   # launch files fail only when launched
    ```

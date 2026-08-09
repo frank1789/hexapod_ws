@@ -115,7 +115,7 @@ usually where a problem shows up first:
 [INFO] [servomotors_node]: configuration: bus /dev/i2c-1, boards 0x40 and 0x41,
                            50.0 Hz, pulse 650-2350 us, settle 50 ms
 [INFO] [pca9685]: opening board 0x40 on /dev/i2c-1
-[INFO] [pca9685]: board 0x40 ready: prescale 121, output frequency 50.14 Hz
+[INFO] [pca9685]: board 0x40 ready: prescale 121, output frequency 50.03 Hz
 [INFO] [servomotors_node]: registered 18 motors from "motors.lua"
 [INFO] [servomotors_node]: all 18 motors moved to their rest position
 ```
@@ -128,8 +128,10 @@ ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args --log-level debug
 
 Warnings worth reading rather than ignoring:
 
-- `requested 50.00 Hz, prescale 121 gives 50.14 Hz` — normal, the prescaler is
-  an integer; pulse widths are computed from the real value.
+- `requested 400.00 Hz, prescale 14 gives 406.90 Hz` — the prescaler is an
+  integer and the rounding bites hard at high frequencies. Only logged when
+  the gap exceeds 0.5 Hz; at the 50 Hz servos use it is 0.03 Hz, so the line
+  stays at INFO. Pulse widths are computed from the real value either way.
 - `angle X degrees is outside [0, 180], clamped` — something asked for an
   impossible joint angle.
 - `write to register N failed (attempt 1 of 3), retrying` — a flaky bus. Check

@@ -147,6 +147,9 @@ words:
   - timemachine
   # hardware, tooling and SVG vocabulary
   - EXTCLK
+  - typesupport
+  - cppcoreguidelines
+  - analyzer
   - Doxyfile
   - raspi
   - usermod

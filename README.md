@@ -8,6 +8,7 @@ Raspberry Pi.
 
 - [Requirements](#requirements)
 - [Build](#build)
+- [Test](#test)
 - [Install](#install)
 - [Run](#run)
 - [Packages](#packages)
@@ -60,6 +61,28 @@ Install the git hooks once per clone (the dev container does it for you):
 pre-commit install
 pre-commit run --all-files
 ```
+
+## Test
+
+```sh
+colcon test --event-handlers console_direct-
+colcon test-result --all --verbose
+```
+
+**No test needs the robot.** They cover the joypad value remapping, the motor
+model and the angle-to-pulse mapping, the PCA9685 frequency arithmetic taken
+from the data sheet and its argument validation, the generated message fields,
+and the URDF together with every mesh it refers to. Anything that would open
+`/dev/i2c-*` is deliberately out of scope, so the suite runs on a laptop.
+
+Run one package on its own with `--packages-select`, for instance:
+
+```sh
+colcon test --packages-select hexapod_servomotor
+```
+
+`colcon test` exits quietly when a package has nothing to run, so read the
+counts from `colcon test-result` rather than trusting the exit code.
 
 ## Install
 

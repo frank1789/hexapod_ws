@@ -71,7 +71,8 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        args: [--max-line-length=100]
+        # E203 contradicts black on slice spacing, and black runs first here.
+        args: [--max-line-length=100, --extend-ignore=E203]
 
   # --- Shell ----------------------------------------------------------------
   - repo: https://github.com/shellcheck-py/shellcheck-py

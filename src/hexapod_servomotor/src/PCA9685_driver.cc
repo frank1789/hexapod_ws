@@ -53,22 +53,6 @@ std::string Hex(std::uint8_t t_value) {
   return stream.str();
 }
 
-/**
- * @brief Convert a frequency into the prescaler value the data sheet defines.
- *
- * prescale = round(osc_clock / (4096 * update_rate)) - 1
- */
-std::uint8_t PrescaleFor(double t_frequency) {
-  const auto ticks = pca9685::kOscillatorClockHz / (4096.0 * t_frequency);
-  const auto prescale = std::lround(ticks) - 1;
-  return static_cast<std::uint8_t>(prescale);
-}
-
-/** @brief Frequency a given prescaler produces, in hertz. */
-double FrequencyFor(std::uint8_t t_prescale) {
-  return pca9685::kOscillatorClockHz / (4096.0 * (static_cast<double>(t_prescale) + 1.0));
-}
-
 }  // namespace
 
 PCA9685::PCA9685(const std::string& t_device, const std::uint8_t t_address) { Initialize(t_device, t_address); }
@@ -114,7 +98,7 @@ void PCA9685::Initialize(const std::string& t_device, const std::uint8_t t_addre
 
   // Read back what the board is actually doing rather than assuming a default.
   m_prescale = m_i2c_device->ReadRegisterByte(pca9685::kPreScale);
-  m_frequency = FrequencyFor(m_prescale);
+  m_frequency = pca9685::FrequencyFromPrescale(m_prescale);
 
   RCLCPP_INFO(Log(), "board %s ready: prescale %u, output frequency %.2f Hz", Hex(m_address).c_str(),
               static_cast<unsigned>(m_prescale), m_frequency);
@@ -158,7 +142,7 @@ void PCA9685::SetPWMFrequency(const double t_freq) {
                                 std::to_string(pca9685::kFrequencyMaxHz) + " Hz");
   }
 
-  auto prescale = PrescaleFor(t_freq);
+  auto prescale = pca9685::PrescaleFromFrequency(t_freq);
   if (prescale < pca9685::kPrescaleMin) {
     RCLCPP_WARN(Log(), "prescale %u is below the hardware minimum %u, clamping", static_cast<unsigned>(prescale),
                 static_cast<unsigned>(pca9685::kPrescaleMin));
@@ -178,7 +162,7 @@ void PCA9685::SetPWMFrequency(const double t_freq) {
   m_i2c_device->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(previous_mode | pca9685::kMode1Restart));
 
   m_prescale = prescale;
-  m_frequency = FrequencyFor(prescale);
+  m_frequency = pca9685::FrequencyFromPrescale(prescale);
 
   if (std::abs(m_frequency - t_freq) > 0.5) {
     // The prescaler is an integer, so the request is rarely met exactly. Say so:

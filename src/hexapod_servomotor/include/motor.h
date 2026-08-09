@@ -116,9 +116,10 @@ class Motor {
 
   static double ValidateAngle(const double);
 
-  std::string m_name;
+  std::string m_name{};
   double m_angle{0.0};
-  int m_pin;
+  /** @brief -1 marks a motor that has not been assigned a channel yet. */
+  int m_pin{-1};
 };
 
 /**

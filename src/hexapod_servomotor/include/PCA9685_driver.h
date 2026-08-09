@@ -204,15 +204,30 @@ class PCA9685 {
    */
   void Wake();
 
+  /**
+   * @brief Throw when a channel index is outside 0 to 15.
+   *
+   * Public and static because it is a pure check on an argument: it can be
+   * exercised, and relied upon, without a board on the bus.
+   *
+   * @param t_channel channel index to check
+   * @throws std::invalid_argument if the index is out of range.
+   */
+  static void EnsureValidChannel(int t_channel);
+
+  /**
+   * @brief Throw when a counter value does not fit in the 12-bit range.
+   *
+   * @param t_value value to check
+   * @param t_name name used in the message, for instance "ON"
+   * @throws std::invalid_argument if the value exceeds 4095, which would set
+   * the full-ON or full-OFF bit instead of a duty cycle.
+   */
+  static void EnsureValidCounter(std::uint16_t t_value, const char* t_name);
+
  private:
   /** @brief Throw when a method is used before @ref Initialize. */
   void EnsureInitialised(const char* t_operation) const;
-
-  /** @brief Throw when a channel index is outside 0 to 15. */
-  static void EnsureValidChannel(int t_channel);
-
-  /** @brief Throw when a counter value does not fit in 12 bits. */
-  static void EnsureValidCounter(std::uint16_t t_value, const char* t_name);
 
   /** @brief Address of the first of the four registers of a channel. */
   [[nodiscard]] static std::uint8_t ChannelRegister(int t_channel) noexcept;

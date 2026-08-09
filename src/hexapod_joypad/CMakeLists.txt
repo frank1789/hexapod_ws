@@ -18,19 +18,30 @@ find_package(hexapod_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
-add_executable(
-  ${PROJECT_NAME}_node
-  src/controller_node.cc src/joypad.cc src/joypad_button.cc
-  src/joypad_thumbstick.cc src/joypad_trigger.cc)
+# The value remapping is plain arithmetic with no ROS in it, so it lives in its
+# own library that both the node and the tests link against.
+add_library(joypad_input STATIC src/joypad_button.cc src/joypad_thumbstick.cc
+                                src/joypad_trigger.cc)
+target_include_directories(joypad_input PUBLIC src)
+
+add_executable(${PROJECT_NAME}_node src/controller_node.cc src/joypad.cc)
 
 target_include_directories(${PROJECT_NAME}_node PRIVATE src)
 
 target_link_libraries(
-  ${PROJECT_NAME}_node PRIVATE rclcpp::rclcpp ${sensor_msgs_TARGETS}
-                               ${hexapod_msgs_TARGETS})
+  ${PROJECT_NAME}_node PRIVATE joypad_input rclcpp::rclcpp
+                               ${sensor_msgs_TARGETS} ${hexapod_msgs_TARGETS})
 
 install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(test_joypad_input test/test_joypad_input.cpp)
+  if(TARGET test_joypad_input)
+    target_link_libraries(test_joypad_input joypad_input)
+  endif()
+endif()
 
 ament_package()

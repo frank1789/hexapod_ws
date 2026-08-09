@@ -5,6 +5,9 @@
   <version>0.1.0</version>
   <description>URDF model and meshes of the hexapod.</description>
   <maintainer email="francesco.argentieri89@gmail.com">Francesco Argentieri</maintainer>
+
+  <author email="uni.lorenzo.a@gmail.com">Lorenzo Argentieri</author>
+  <author email="francesco.argentieri89@gmail.com">Francesco Argentieri</author>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
@@ -14,6 +17,8 @@
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
