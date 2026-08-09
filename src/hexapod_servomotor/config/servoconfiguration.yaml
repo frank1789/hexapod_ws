@@ -1,18 +1,50 @@
-# Parameters for hexapod_servomotor_node.
+# Parameters of hexapod_servomotor_node.
 #
-# The wildcard node name keeps this file valid no matter which name the launch
-# file gives the node.
+# The wildcard node name keeps this file valid whatever name the launch file
+# gives the node.
 #
-# NOTE: the motor table (name -> pin) is NOT here. It is generated at runtime by
-# config/motors.lua, and the homing angles come from config/homing.lua.
+# NOTE: the motor table (name -> channel) is NOT here. It is generated at
+# runtime by config/motors.lua, and the rest angles come from config/homing.lua.
+# See doc/configuration.md for the whole picture.
 /**:
   ros__parameters:
-    # I2C bus the two PCA9685 boards are wired to.
+    # --- I2C -----------------------------------------------------------------
+    # Bus the two PCA9685 boards are wired to.
     i2c_bus: "/dev/i2c-1"
-    # Board driving the motors whose name starts with "L", and the other one.
-    # Decimal on purpose: the ROS 2 YAML parameter parser does not read 0x literals.
-    left_driver_address: 64   # 0x40
-    right_driver_address: 65  # 0x41
-    # Set the pwm frequency to some value between 40 and 1000.
-    # 50 is typically used for servos.
+    # Address of each board. They share the bus, so they must differ: solder the
+    # A0 jumper on the second board to move it from 0x40 (64) to 0x41 (65).
+    # Decimal on purpose, the ROS 2 YAML parameter parser does not read 0x.
+    left_driver_address: 64 # 0x40, drives every motor whose name starts with L
+    right_driver_address: 65 # 0x41, drives the rest
+
+    # --- PWM -----------------------------------------------------------------
+    # Refresh rate of the servo signal, between 24 and 1526 Hz. Hobby servos
+    # expect 50 Hz. The prescaler is an integer, so the board produces the
+    # closest frequency it can and the node logs what it settled on.
     pwm_frequency: 50.0
+
+    # Pulse widths, in microseconds, that command the ends of the travel.
+    # 1000-2000 us is the nominal standard; most servos reach further, and these
+    # defaults cover the full 180 degrees of the models fitted to this robot.
+    # Narrow them if a joint buzzes or strains at either end: a servo held past
+    # its mechanical stop stalls, draws its full current and overheats.
+    min_pulse_width_us: 650.0 # 0 degrees
+    max_pulse_width_us: 2350.0 # 180 degrees
+
+    # --- Motion --------------------------------------------------------------
+    # Pause after every servo command, in milliseconds, so the joint has time to
+    # travel before the next one is written.
+    settle_time_ms: 50
+
+    # Motors generated per side by motors.lua: three legs, three joints each.
+    motors_per_side: 9
+
+    # --- Startup -------------------------------------------------------------
+    # Sweep every joint over its whole travel when the node starts.
+    # DANGEROUS on an assembled robot: it will fall over. Only enable it on a
+    # bench, with the body supported and the legs free.
+    perform_startup_test: false
+
+    # Lua scripts read from the config directory of the installed package.
+    motors_script: "motors.lua"
+    homing_script: "homing.lua"

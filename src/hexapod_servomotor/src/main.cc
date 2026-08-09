@@ -1,44 +1,78 @@
 /**
  * @file main.cc
  * @author Francesco Argentieri (francesco.argentieri89@gmail.com)
- * @brief Entry point for Servo Motors Node.
+ * @brief Entry point of the servomotor node.
  * @version 0.2.0
- * @date 2022-12-04
+ * @date 2026-08-09
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2021-2026 Francesco Argentieri
  *
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
-#include <iostream>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
 
 #include "servocontroller.h"
 
+/**
+ * @brief Start the servomotor node.
+ *
+ * Raise the verbosity with:
+ * `ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args --log-level debug`
+ *
+ * @return 0 on a clean shutdown, 1 if the node could not be brought up.
+ */
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
+  const auto logger = rclcpp::get_logger("servomotors_node");
 
-  // Raise verbosity with:  ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args --log-level debug
   try {
     auto node = std::make_shared<hexapod::ServoController>();
-    RCLCPP_INFO(node->get_logger(), "Initialize servomotors node.");
-    node->PerformTest();
-    node->RestoreDefaultPosition();
+
+    // Opt in only: sweeping every joint on a robot standing on its legs makes
+    // it fall over.
+    if (node->StartupTestRequested()) {
+      node->PerformTest();
+    }
+
     rclcpp::spin(node);
-  } catch (const std::runtime_error& re) {
-    // specific handling for runtime_error
-    std::cerr << "Runtime error: " << re.what() << std::endl;
+  } catch (const std::system_error& error) {
+    RCLCPP_FATAL(logger, "I2C failure: %s", error.what());
     rclcpp::shutdown();
     return 1;
-  } catch (const std::exception& ex) {
-    // specific handling for all exceptions extending std::exception, except
-    // std::runtime_error which is handled explicitly
-    std::cerr << "Error occurred: " << ex.what() << std::endl;
+  } catch (const std::invalid_argument& error) {
+    RCLCPP_FATAL(logger, "invalid configuration: %s", error.what());
+    rclcpp::shutdown();
+    return 1;
+  } catch (const std::runtime_error& error) {
+    RCLCPP_FATAL(logger, "runtime error: %s", error.what());
+    rclcpp::shutdown();
+    return 1;
+  } catch (const std::exception& error) {
+    RCLCPP_FATAL(logger, "error occurred: %s", error.what());
     rclcpp::shutdown();
     return 1;
   } catch (...) {
-    // catch any other errors (that we have no information about)
-    std::cerr << "Unknown failure occurred." << std::endl;
+    RCLCPP_FATAL(logger, "unknown failure occurred");
     rclcpp::shutdown();
     return 1;
   }
