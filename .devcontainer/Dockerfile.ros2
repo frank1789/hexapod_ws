@@ -1,151 +1,177 @@
-FROM ubuntu:24.04 AS base
+# syntax=docker/dockerfile:1
+#
+# Development image for hexapod_ws: ROS 2 + LLVM/clang toolchain, non-root user.
+#
+# Every version-specific value is an ARG and nothing below hard-codes a distro
+# or a compiler version, so upgrading is a one-line change:
+#
+#   docker build -f Dockerfile.ros2 -t hexapod-dev \
+#       --build-arg ROS_DISTRO=kilted --build-arg LLVM_VERSION=22 .
+#
+# The same ARGs are surfaced in devcontainer.json.
 
-ARG LLVM_VERSION=21
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION}
+
 ARG ROS_DISTRO=jazzy
+ARG LLVM_VERSION=21
+ARG USERNAME=dev
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PIP_BREAK_SYSTEM_PACKAGES=1
+# ROS_DISTRO is exported, not just an ARG: entrypoint, .bashrc and postCreate
+# all read it, so they stay distro-agnostic.
+ENV ROS_DISTRO=${ROS_DISTRO} \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    SHELL=/bin/bash
 
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y software-properties-common lsb-release ca-certificates gnupg wget curl
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-RUN apt-get update && apt-get install -y locales sudo bash \
-    && locale-gen en_US en_US.UTF-8 \
-    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+# --------------------------------------------------------------- base system
+# DEBIAN_FRONTEND is a build-time concern only, so it is exported per-RUN
+# instead of leaking into the running container's environment.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash-completion \
+        ca-certificates \
+        cppcheck \
+        curl \
+        gdb \
+        git \
+        git-lfs \
+        gnupg \
+        locales \
+        lsb-release \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ssh \
+        sudo \
+        unzip \
+        valgrind \
+        wget \
+        zip \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV LANG=en_US.UTF-8
+# ------------------------------------------------ project build dependencies
+# liblua5.3-dev: hexapod_servomotor does find_package(Lua 5.3 REQUIRED), which
+#                needs lua.h — the lua5.3 interpreter package alone is not enough.
+# libi2c-dev:    i2c-peripheral.cc includes <i2c/smbus.h> and the node links -li2c.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        libi2c-dev \
+        liblua5.3-dev \
+        lua5.3 \
+        ninja-build \
+        pkg-config \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV add-apt-repository universe \
-    && apt update \
-    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | tee /usr/share/keyrings/kitware-archive-keyring.gpg >/dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null \
-    && apt-add-repository ppa:ubuntu-toolchain-r/test
+# --------------------------------------------------------------------- ROS 2
+# The ros-apt-source .deb installs the keyring and the sources.list entry for
+# the running Ubuntu release, so no key handling is needed here.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && ROS_APT_SOURCE_VERSION="$(curl -fsSL https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
+        | grep -F '"tag_name"' | awk -F'"' '{print $4}')" \
+    && curl -fsSL -o /tmp/ros2-apt-source.deb \
+        "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo "${VERSION_CODENAME}")_all.deb" \
+    && apt-get update \
+    && apt-get install -y /tmp/ros2-apt-source.deb \
+    && rm -f /tmp/ros2-apt-source.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ros-${ROS_DISTRO}-ros-base \
+        ros-${ROS_DISTRO}-joy \
+        ros-${ROS_DISTRO}-joint-state-publisher-gui \
+        ros-${ROS_DISTRO}-robot-state-publisher \
+        ros-${ROS_DISTRO}-rviz2 \
+        ros-${ROS_DISTRO}-xacro \
+        ros-${ROS_DISTRO}-ament-copyright \
+        ros-${ROS_DISTRO}-ament-flake8 \
+        ros-${ROS_DISTRO}-ament-uncrustify \
+        ros-dev-tools \
+    && rosdep init \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update -y && \
-    apt-get install --no-install-recommends -y \
-    bash-completion \
-    autoconf \
-    binutils \
-    bison \
-    build-essential \
-    bzip2 \
-    cmake \
-    flex \
-    gawk \
-    git \
-    git-lfs \
-    gnupg2 \
-    gzip \
-    libgmp-dev \
-    libisl-dev \
-    libmpc-dev \
-    libmpfr-dev \
-    libtool \
-    lsb-release \
-    make \
-    perl \
-    python3 \
-    python3-pip \
-    tar \
-    unzip \
-    libzstd-dev \
-    ca-certificates \
-    lua5.3 \
-    pkg-config \
-    ninja-build \
-    valgrind \
-    gpg \
-    software-properties-common \
-    gdb \
-    cppcheck \
-    zip \
-    default-jdk
+# ---------------------------------------------------------------- LLVM/clang
+# llvm.sh installs exactly ${LLVM_VERSION}; the alternatives loop is written
+# against the same variable, so bumping LLVM_VERSION is the only edit needed.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends software-properties-common \
+    && curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
+    && chmod +x /tmp/llvm.sh \
+    && /tmp/llvm.sh ${LLVM_VERSION} \
+    && apt-get install -y --no-install-recommends \
+        clang-format-${LLVM_VERSION} \
+        clang-tidy-${LLVM_VERSION} \
+        clangd-${LLVM_VERSION} \
+    && rm -f /tmp/llvm.sh \
+    && for tool in clang clang++ clang-cpp clang-format clang-tidy clangd \
+                   lld ld.lld llvm-ar llvm-config llvm-cov llvm-nm llvm-objcopy \
+                   llvm-objdump llvm-profdata llvm-ranlib llvm-strip llvm-symbolizer; do \
+           if [ -x "/usr/bin/${tool}-${LLVM_VERSION}" ]; then \
+               update-alternatives --install "/usr/bin/${tool}" "${tool}" \
+                   "/usr/bin/${tool}-${LLVM_VERSION}" 100; \
+           fi; \
+       done \
+    && rm -rf /var/lib/apt/lists/*
 
-FROM base AS tools
+# ------------------------------------------------------ python dev tooling
+# apt for what ROS imports from the system interpreter (ament_flake8 and the
+# ament test harness), pipx — one isolated venv per tool — for the CLI tools.
+# Plain `pip install` into the system environment fails on Ubuntu 24.04: it
+# tries to uninstall Debian-managed packages such as `packaging` and cannot.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        pipx \
+        python3-argcomplete \
+        python3-flake8 \
+        python3-pytest \
+        python3-pytest-cov \
+    && export PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin \
+    && pipx install black \
+    && pipx install commitizen \
+    && pipx install isort \
+    && pipx install pre-commit \
+    && rm -rf /var/lib/apt/lists/*
 
-# Example using the download link for GCC 15.1.0
-# You may need to adjust the version number if a newer one is available
-# RUN wget https://ftp.gnu.org/gnu/gcc/gcc-15.1.0/gcc-15.1.0.tar.gz \
-#     && tar -xzf gcc-15.1.0.tar.gz \
-#     && cd gcc-15.1.0/ \
-#     && mkdir build && cd build \
-#     && ../configure --prefix=/usr/local/gcc-15.1.0 --disable-multilib --enable-languages=c,c++ \
-#     && make -j $(nproc) \
-#     && make install
+# -------------------------------------------------------------- non-root user
+# Ubuntu 24.04 ships a stock "ubuntu" account on UID 1000, which collides with
+# the host UID we normally want. Free the requested UID/GID first so the
+# bind-mounted /workspace stays writable without any chown.
+RUN if getent passwd ${USER_UID} >/dev/null; then \
+        userdel -r "$(getent passwd ${USER_UID} | cut -d: -f1)" 2>/dev/null || true; \
+    fi \
+    && if ! getent group ${USER_GID} >/dev/null; then \
+        groupadd --gid ${USER_GID} ${USERNAME}; \
+    fi \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} \
+    && echo "${USERNAME} ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME} \
+    && mkdir -p /workspace \
+    && chown ${USER_UID}:${USER_GID} /workspace
 
-# RUN update-alternatives --install /usr/bin/gcc gcc /usr/local/gcc-15.1.0/bin/gcc 1510 && \
-#     update-alternatives --install /usr/bin/g++ g++ /usr/local/gcc-15.1.0/bin/g++ 1510
+COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN wget https://apt.llvm.org/llvm.sh \
-    && chmod +x llvm.sh \
-    && ./llvm.sh ${LLVM_VERSION} all \
-    && rm llvm.sh
+USER ${USERNAME}
+WORKDIR /workspace
 
-RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-ar llvm-ar /usr/bin/llvm-ar-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-as llvm-as /usr/bin/llvm-as-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-nm llvm-nm /usr/bin/llvm-nm-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-objdump llvm-objdump /usr/bin/llvm-objdump-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-ranlib llvm-ranlib /usr/bin/llvm-ranlib-${LLVM_VERSION}  100 \
-    && update-alternatives --install /usr/bin/llvm-readelf llvm-readelf /usr/bin/llvm-readelf-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-strip llvm-strip /usr/bin/llvm-strip-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-dwarfdump llvm-dwarfdump /usr/bin/llvm-dwarfdump-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-cov llvm-cov /usr/bin/llvm-cov-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-profdata llvm-profdata /usr/bin/llvm-profdata-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-symbolizer llvm-symbolizer /usr/bin/llvm-symbolizer-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-objcopy llvm-objcopy /usr/bin/llvm-objcopy-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-dlltool llvm-dlltool /usr/bin/llvm-dlltool-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-strings llvm-strings /usr/bin/llvm-strings-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-dwp llvm-dwp /bin/llvm-dwp-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/llvm-lto llvm-lto /bin/llvm-lto-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/clang-format clang-format /bin/clang-format-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/clang-tidy clang-tidy /bin/clang-tidy-${LLVM_VERSION} 100 \
-    && update-alternatives --install /usr/bin/clangd clangd /bin/clangd-${LLVM_VERSION} 100
+# Interactive shells get ROS and, once built, the workspace overlay.
+# rosdep runs as the user because it writes into ${HOME}/.ros.
+RUN printf '%s\n' \
+        "source /opt/ros/${ROS_DISTRO}/setup.bash" \
+        'if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi' \
+        >> "${HOME}/.bashrc" \
+    && rosdep update --rosdistro "${ROS_DISTRO}"
 
-RUN python3 -m pip install --no-cache-dir \
-    argcomplete \
-    pytest \
-    pytest-cov \
-    pre-commit \
-    commitizen \
-    flake8 \
-    black \
-    isort
-
-
-
-FROM tools AS ros2
-# Install ROS 2 Jazzy
-
-RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-    && export ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}') \
-    && curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo $VERSION_CODENAME)_all.deb" \
-    && apt-get install -y /tmp/ros2-apt-source.deb
-
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y ros-jazzy-ros-base \
-    python3-colcon-common-extensions
-
-FROM ros2 AS devenv
-
-ARG USERNAME=user
-ARG USER_UID=1001
-ARG USER_GID=$USER_UID
-
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-USER $USERNAME
-
-FROM devenv AS final
-
-ENV SHELL /bin/bash
-RUN echo "source /opt/ros/jazzy/setup.bash" >> /home/$USERNAME/.bashrc
-CMD ["/bin/bash"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["bash"]
