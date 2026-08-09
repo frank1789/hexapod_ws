@@ -1,0 +1,150 @@
+# Spell checking for the repository and for the editor (the Code Spell Checker
+# extension reads this file). British English is the project dictionary.
+version: "0.2"
+language: en-GB
+
+ignorePaths:
+  - "src/hexapod_description/meshes/**"
+  - "src/reference_img/**"
+  - "build/**"
+  - "install/**"
+  - "log/**"
+  - ".git/**"
+
+# Domain vocabulary: robotics, ROS 2, the PCA9685 datasheet and the toolchain.
+words:
+  # robot anatomy and project names
+  - hexapod
+  - coxa
+  - femur
+  - tibia
+  - thorax
+  - joypad
+  - thumbstick
+  - thumbsticks
+  - servomotor
+  - servomotors
+  - servoconfiguration
+  # ROS 2 and its tooling
+  - rclcpp
+  - rosidl
+  - rosdep
+  - rosdistro
+  - colcon
+  - ament
+  - uncrustify
+  - vcstool
+  - xacro
+  - rviz
+  - urdf
+  - msgs
+  - distro
+  - autorepeat
+  - launchfile
+  - joyfeedback
+  # hardware and drivers
+  - adafruit
+  - smbus
+  - ioctl
+  - prescale
+  - prescaleval
+  - oldmode
+  - newmode
+  - allcall
+  - outdrv
+  - invrt
+  - subadr
+  - peripheral
+  - homing
+  # toolchain
+  - commitizen
+  - autoupdate
+  - devcontainer
+  - clangd
+  - cppcheck
+  - shellcheck
+  - pipx
+  - luac
+  - noninteractive
+  - dearmor
+  - keyring
+  - nodiscard
+  - cstring
+  - cstdint
+  - fallthrough
+  - hypot
+  - atan
+  - nproc
+  - sudoers
+  - useradd
+  - groupadd
+  - userdel
+  - getent
+  - libi
+  - liblua
+  - argcomplete
+  - pytest
+  - venv
+  - pycache
+  # identifiers and file names used in this repository
+  - Argentieri
+  - buildtool
+  - buttonsmap
+  - servocontroller
+  - remapper
+  - legname
+  - postfixies
+  - HOMINGPOSITION
+  - Xaxis
+  - Yaxis
+  - Clss
+  - Choutengan
+  - datasheet
+  - vendored
+  - userspace
+  - writable
+  - Reflow
+  - Extern
+  - STRINGIZE
+  - IWYU
+  # URDF/COLLADA attributes we do not control
+  - rgba
+  - color
+  - schematypens
+  - COLLADA
+  - deadzone
+  - respawn
+  # compiler, linker and shell flags
+  - Wextra
+  - Wpedantic
+  - Wreorder
+  - fsyntax
+  - isystem
+  - pipefail
+  - objcopy
+  - objdump
+  - profdata
+  - ranlib
+  - symbolizer
+  - NOPASSWD
+  - DCMAKE
+  - isort
+  - gitmessage
+  # VS Code extension identifiers
+  - mhutchie
+  - mutantdino
+  - resourcemonitor
+  # legacy entries kept in .gitignore from the ROS 1 days
+  - roscpp
+  - cfgc
+  - cproject
+  - qcreator
+  - qtcreator
+  - wikidoc
+  - apdisk
+  - fseventsd
+  - donotpresent
+  - timemachine
+  # known misspellings that are part of an interface, see CLAUDE.md
+  - magnitute
+  - exapod
