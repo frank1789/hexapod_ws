@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300" width="720" height="300" role="img"
+     aria-label="PCA9685 PWM timing: a 20 ms period at 50 Hz with servo pulses between 650 and 2350 microseconds">
+  <rect x="0" y="0" width="720" height="300" fill="#ffffff"/>
+  <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
+
+    <text x="16" y="26" font-size="15" font-weight="bold">One PWM period at 50 Hz (prescale 121)</text>
+
+    <!-- baseline -->
+    <line x1="60" y1="150" x2="690" y2="150" stroke="#8b949e" stroke-width="1"/>
+    <text x="16" y="155">output</text>
+
+    <!-- pulse 1: minimum, 650 us -->
+    <path d="M60,150 L60,90 L82,90 L82,150 L340,150" fill="none" stroke="#0969da" stroke-width="2.5"/>
+    <!-- pulse 2: maximum, 2350 us -->
+    <path d="M340,150 L340,90 L420,90 L420,150 L690,150" fill="none" stroke="#0969da" stroke-width="2.5"/>
+
+    <!-- period brackets -->
+    <line x1="60" y1="180" x2="340" y2="180" stroke="#57606a" stroke-width="1"/>
+    <line x1="60" y1="175" x2="60" y2="185" stroke="#57606a" stroke-width="1"/>
+    <line x1="340" y1="175" x2="340" y2="185" stroke="#57606a" stroke-width="1"/>
+    <text x="150" y="198" fill="#57606a">20 ms period = 4096 counter ticks</text>
+
+    <line x1="340" y1="180" x2="690" y2="180" stroke="#57606a" stroke-width="1"/>
+    <line x1="690" y1="175" x2="690" y2="185" stroke="#57606a" stroke-width="1"/>
+
+    <!-- pulse annotations -->
+    <line x1="60" y1="70" x2="82" y2="70" stroke="#1a7f37" stroke-width="1"/>
+    <text x="88" y="74" fill="#1a7f37">650 us -> 0 deg -> OFF tick 133</text>
+
+    <line x1="340" y1="70" x2="420" y2="70" stroke="#1a7f37" stroke-width="1"/>
+    <text x="426" y="74" fill="#1a7f37">2350 us -> 180 deg -> OFF tick 481</text>
+
+    <!-- counter axis -->
+    <text x="60" y="235" fill="#57606a">counter 0</text>
+    <text x="300" y="235" fill="#57606a">4095</text>
+    <text x="60" y="262">The channel goes high at the ON tick and low at the OFF tick.</text>
+    <text x="60" y="280">Only about 8.5 % of the 12-bit range is usable for servo travel.</text>
+  </g>
+</svg>

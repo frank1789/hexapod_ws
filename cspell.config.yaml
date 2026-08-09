@@ -145,6 +145,14 @@ words:
   - fseventsd
   - donotpresent
   - timemachine
+  # hardware, tooling and SVG vocabulary
+  - EXTCLK
+  - Doxyfile
+  - raspi
+  - usermod
+  - cdetect
+  - dasharray
+  - rect
   # known misspellings that are part of an interface, see CLAUDE.md
   - magnitute
   - exapod
