@@ -21,8 +21,9 @@ Motor::Motor(std::string t_name, int t_pin) noexcept : m_name(std::move(t_name))
   // empty implementation
 }
 
+// Initializers follow the declaration order in motor.h, otherwise -Wreorder.
 Motor::Motor(std::string t_name, int t_pin, double t_angle) noexcept
-    : m_name(std::move(t_name)), m_pin(t_pin), m_angle(ValidateAngle(t_angle)) {
+    : m_name(std::move(t_name)), m_angle(ValidateAngle(t_angle)), m_pin(t_pin) {
   // empty implementation
 }
 

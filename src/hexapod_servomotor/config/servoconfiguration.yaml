@@ -1,43 +1,18 @@
-# Set the pwm frequency to some value between 40 and 1000
-# 50 is typically used for servos
-pwm_frequency: 50.0
-hexapod: # hexapod motors structure
-  - motors: 
-    - left : 
-      - name: "L_coxaA"   
-        pin: 0
-      - name: "L_femurA" 
-        pin: 1
-      - name: "L_tibiaA" 
-        pin: 2
-      - name: "L_coxaB"   
-        pin: 3
-      - name: "L_femurB"  
-        pin: 4
-      - name: "L_tibiaB"  
-        pin: 5
-      - name: "L_coxaC "  
-        pin: 6
-      - name: "L_femurC"  
-        pin: 7
-      - name: "L_tibiaC"  
-        pin: 8
-    - right : 
-      - name: "L_coxaA"   
-        pin: 0
-      - name: "L_femurA" 
-        pin: 1
-      - name: "L_tibiaA" 
-        pin: 2
-      - name: "L_coxaB"   
-        pin: 3
-      - name: "L_femurB"  
-        pin: 4
-      - name: "L_tibiaB"  
-        pin: 5
-      - name: "L_coxaC "  
-        pin: 6
-      - name: "L_femurC"  
-        pin: 7
-      - name: "L_tibiaC"  
-        pin: 8
+# Parameters for hexapod_servomotor_node.
+#
+# The wildcard node name keeps this file valid no matter which name the launch
+# file gives the node.
+#
+# NOTE: the motor table (name -> pin) is NOT here. It is generated at runtime by
+# config/motors.lua, and the homing angles come from config/homing.lua.
+/**:
+  ros__parameters:
+    # I2C bus the two PCA9685 boards are wired to.
+    i2c_bus: "/dev/i2c-1"
+    # Board driving the motors whose name starts with "L", and the other one.
+    # Decimal on purpose: the ROS 2 YAML parameter parser does not read 0x literals.
+    left_driver_address: 64   # 0x40
+    right_driver_address: 65  # 0x41
+    # Set the pwm frequency to some value between 40 and 1000.
+    # 50 is typically used for servos.
+    pwm_frequency: 50.0
