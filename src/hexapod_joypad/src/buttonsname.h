@@ -4,7 +4,7 @@
 // ros msgs form ps3joypad need maps
 // axes: [-0.0, -0.0, 1.0, -0.0, -0.0, 1.0]
 // buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-//           X, O, T, Q,L1,R1,L2,R2,SE,ST,PS,L3,R3,UP,DW,RT,LT 
+//           X, O, T, Q,L1,R1,L2,R2,SE,ST,PS,L3,R3,UP,DW,RT,LT
 
 // X  -> cross button
 // X  -> circle button
@@ -22,13 +22,13 @@
 //
 // axes [-0.0, -0.0, 1.0, -0.0, -0.0, 1.0]
 //         |    |     |     |     |    +---> R2 axis (form 1.0 to -1.0(pressed)) remap as 0 to 1.0 (pressed)
-//         |    |     |     |     +---> right stick y axis 
+//         |    |     |     |     +---> right stick y axis
 //         |    |     |     |
 //         |    |     |     +---> right stick x axis on left position == 1, on right position == -1 ( remember to invert respects actual value)
 //         |    |     |
 //         |    |     +---> L2 axis (form 1.0 to -1.0(pressed)) remap as 0 to 1.0 (pressed)
 //         |    |
-//         |    +---> left stick y axis 
+//         |    +---> left stick y axis
 //         |
 //         +---> left stick x axis on left position == 1, on right position == -1 ( remember to invert respects actual value)
 //

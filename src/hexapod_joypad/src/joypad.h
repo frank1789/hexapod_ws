@@ -1,46 +1,44 @@
 #ifndef JOYPAD_H
 #define JOYPAD_H
 
-#include <ros/ros.h>
-#include <sensor_msgs/Joy.h>
-
-#include <functional>
-#include <iostream>
-#include <string>
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joy.hpp>
 #include <unordered_map>
 
+#include "hexapod_msgs/msg/joypad_button.hpp"
+#include "hexapod_msgs/msg/joypad_thumbstick.hpp"
+#include "hexapod_msgs/msg/joypad_trigger.hpp"
 #include "joypad_button.h"
 #include "joypad_thumbstick.h"
 #include "joypad_trigger.h"
 
-class Joypad {
+class Joypad : public rclcpp::Node {
  public:
   /**
-   * @brief Construct the Joypad object
+   * @brief Construct the Joypad node, subscribing to /joy and advertising the
+   * remapped joypad/{button,thumbstick,trigger} topics.
    */
-  explicit Joypad();
+  Joypad();
 
   /**
    * @brief Destroy the Joypad object
    *
    */
-  ~Joypad() = default;
+  ~Joypad() override = default;
 
  private:
-  void controllerCallback(const sensor_msgs::Joy::ConstPtr& msg);
+  void controllerCallback(const sensor_msgs::msg::Joy::ConstSharedPtr& msg);
 
- private:
   Trigger L2_triggers_;
   Trigger R2_triggers_;
   ThumbStick L3_thumbstick_;
   ThumbStick R3_thumbstick_;
   std::unordered_map<int, Button> buttons_;
 
-  ros::NodeHandle node_handler_;
-  ros::Subscriber joy_subscriber_;
-  ros::Publisher trigger_publisher_;
-  ros::Publisher thumbstick_publisher_;
-  ros::Publisher button_publisher_;
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
+  rclcpp::Publisher<hexapod_msgs::msg::JoypadTrigger>::SharedPtr trigger_publisher_;
+  rclcpp::Publisher<hexapod_msgs::msg::JoypadThumbstick>::SharedPtr thumbstick_publisher_;
+  rclcpp::Publisher<hexapod_msgs::msg::JoypadButton>::SharedPtr button_publisher_;
 };
 
 #endif  // JOYPAD_H
