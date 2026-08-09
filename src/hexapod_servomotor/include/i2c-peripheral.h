@@ -45,7 +45,7 @@
  * @note Copying is disabled because the file descriptor has a single owner.
  * Moving transfers that ownership.
  */
-class i2cPeripheral {
+class I2cPeripheral {
  public:
   /** @brief Number of times a transfer is retried before it is given up. */
   static constexpr int kMaxAttempts{3};
@@ -53,7 +53,7 @@ class i2cPeripheral {
   /**
    * @brief Construct a peripheral that is not attached to any bus.
    */
-  i2cPeripheral() noexcept = default;
+  I2cPeripheral() noexcept = default;
 
   /**
    * @brief Open the bus and select the device.
@@ -65,19 +65,19 @@ class i2cPeripheral {
    * the file does not exist (the I2C interface is disabled) or the user is not
    * a member of the `i2c` group.
    */
-  i2cPeripheral(const std::string& t_device, std::uint8_t t_address);
+  I2cPeripheral(const std::string& t_device, std::uint8_t t_address);
 
-  i2cPeripheral(const i2cPeripheral&) = delete;
-  i2cPeripheral& operator=(const i2cPeripheral&) = delete;
+  I2cPeripheral(const I2cPeripheral&) = delete;
+  I2cPeripheral& operator=(const I2cPeripheral&) = delete;
 
   /** @brief Take over the file descriptor of @p other. */
-  i2cPeripheral(i2cPeripheral&& other) noexcept;
+  I2cPeripheral(I2cPeripheral&& other) noexcept;
 
   /** @brief Close the current descriptor and take over the one of @p other. */
-  i2cPeripheral& operator=(i2cPeripheral&& other) noexcept;
+  I2cPeripheral& operator=(I2cPeripheral&& other) noexcept;
 
   /** @brief Close the bus, if one is open. */
-  ~i2cPeripheral();
+  ~I2cPeripheral();
 
   /**
    * @brief Write one byte into a register of the device.
@@ -109,9 +109,10 @@ class i2cPeripheral {
   /** @brief An invalid descriptor, so the destructor knows there is nothing to close. */
   static constexpr int kClosed{-1};
 
-  int m_bus_fd{kClosed};
-  std::string m_device{};
-  std::uint8_t m_address{0};
+  // Declared largest first: the previous order cost eight bytes of padding.
+  std::string device_;
+  int bus_fd_{kClosed};
+  std::uint8_t address_{0};
 };
 
 #endif  // SERVOMOTORS_I2C_PERIPHERAL_H_

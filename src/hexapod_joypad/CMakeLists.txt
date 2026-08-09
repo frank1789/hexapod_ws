@@ -9,6 +9,24 @@ endif()
 # compilers (-std=c++20 rather than -std=gnu++20).
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# --- Static analysis --------------------------------------------------------
+# clang-tidy runs as part of the compilation, never as a git hook: a check that
+# needs the full include path belongs where the include path exists. Disable it
+# with -DHEXAPOD_ENABLE_CLANG_TIDY=OFF for a quick build.
+option(HEXAPOD_ENABLE_CLANG_TIDY "Run clang-tidy while compiling" ON)
+if(HEXAPOD_ENABLE_CLANG_TIDY)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+  else()
+    message(STATUS "clang-tidy not found: static analysis is disabled")
+  endif()
+endif()
+
+# One compile_commands.json per package; scripts/merge-compile-commands.sh joins
+# them into a single file at the root of the workspace for clangd.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()

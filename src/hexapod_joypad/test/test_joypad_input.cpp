@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <numbers>
 #include <sstream>
 
 #include "joypad_button.h"
@@ -20,6 +21,10 @@
 namespace {
 
 constexpr double kTolerance{1e-9};
+
+/** @brief An arbitrary off centre stick position. */
+constexpr double kRawX{-0.5};
+constexpr double kRawY{0.25};
 
 }  // namespace
 
@@ -90,9 +95,9 @@ TEST(ThumbStick, NeutralStickIsZero) {
   ThumbStick stick{"L3"};
   stick.setAxes(0.0, 0.0);
 
-  const auto [x, y] = stick.getAxesValues();
-  EXPECT_NEAR(x, 0.0, kTolerance);
-  EXPECT_NEAR(y, 0.0, kTolerance);
+  const auto [axis_x, axis_y] = stick.getAxesValues();
+  EXPECT_NEAR(axis_x, 0.0, kTolerance);
+  EXPECT_NEAR(axis_y, 0.0, kTolerance);
   EXPECT_NEAR(stick.getMagnitude(), 0.0, kTolerance);
 }
 
@@ -100,9 +105,9 @@ TEST(ThumbStick, InvertsTheRawHorizontalAxis) {
   ThumbStick stick{"L3"};
   stick.setAxes(-1.0, 0.0);  // raw "full right"
 
-  const auto [x, y] = stick.getAxesValues();
-  EXPECT_NEAR(x, 1.0, kTolerance);
-  EXPECT_NEAR(y, 0.0, kTolerance);
+  const auto [axis_x, axis_y] = stick.getAxesValues();
+  EXPECT_NEAR(axis_x, 1.0, kTolerance);
+  EXPECT_NEAR(axis_y, 0.0, kTolerance);
   EXPECT_NEAR(stick.getAngle(), 0.0, kTolerance);
 }
 
@@ -110,16 +115,16 @@ TEST(ThumbStick, FullLeftPointsAtPi) {
   ThumbStick stick{"L3"};
   stick.setAxes(1.0, 0.0);  // raw "full left"
 
-  const auto [x, y] = stick.getAxesValues();
-  EXPECT_NEAR(x, -1.0, kTolerance);
-  EXPECT_NEAR(std::abs(stick.getAngle()), M_PI, kTolerance);
+  const auto [axis_x, axis_y] = stick.getAxesValues();
+  EXPECT_NEAR(axis_x, -1.0, kTolerance);
+  EXPECT_NEAR(std::abs(stick.getAngle()), std::numbers::pi, kTolerance);
 }
 
 TEST(ThumbStick, FullUpPointsAtHalfPi) {
   ThumbStick stick{"L3"};
   stick.setAxes(0.0, 1.0);
 
-  EXPECT_NEAR(stick.getAngle(), M_PI / 2.0, kTolerance);
+  EXPECT_NEAR(stick.getAngle(), std::numbers::pi / 2.0, kTolerance);
   EXPECT_NEAR(stick.getMagnitude(), 1.0, kTolerance);
 }
 
@@ -135,16 +140,16 @@ TEST(ThumbStick, NeverReportsNegativeZero) {
   ThumbStick stick{"L3"};
   stick.setAxes(-0.0, -0.0);
 
-  const auto [x, y] = stick.getAxesValues();
-  EXPECT_FALSE(std::signbit(x));
-  EXPECT_FALSE(std::signbit(y));
+  const auto [axis_x, axis_y] = stick.getAxesValues();
+  EXPECT_FALSE(std::signbit(axis_x));
+  EXPECT_FALSE(std::signbit(axis_y));
 }
 
 TEST(ThumbStick, RawValuesAreKeptUntouched) {
   ThumbStick stick{"L3"};
-  stick.setAxes(-0.5, 0.25);
+  stick.setAxes(kRawX, kRawY);
 
   const auto [raw_x, raw_y] = stick.getRawAxesValues();
-  EXPECT_NEAR(raw_x, -0.5, kTolerance);
-  EXPECT_NEAR(raw_y, 0.25, kTolerance);
+  EXPECT_NEAR(raw_x, kRawX, kTolerance);
+  EXPECT_NEAR(raw_y, kRawY, kTolerance);
 }

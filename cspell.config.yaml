@@ -148,6 +148,11 @@ words:
   # hardware, tooling and SVG vocabulary
   - EXTCLK
   - typesupport
+  - Constexpr
+  - NOLINTNEXTLINE
+  - vararg
+  - objc
+  - DHEXAPOD
   - cppcoreguidelines
   - analyzer
   - Doxyfile

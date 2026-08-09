@@ -154,26 +154,28 @@ class ServoController : public rclcpp::Node {
   sol::protected_function LoadScript(const std::string& t_filename, const std::string& t_entry_point);
 
   /** @brief Board driving the motors whose name starts with `L`. */
-  adafruit::PCA9685 m_servo_driver_left;
+  adafruit::PCA9685 servo_driver_left_;
 
   /** @brief Board driving every other motor. */
-  adafruit::PCA9685 m_servo_driver_right;
+  adafruit::PCA9685 servo_driver_right_;
 
-  sol::state lua;                   /**< Lua interpreter used for the configuration. */
-  std::string m_config_directory{}; /**< Where the Lua scripts were installed. */
-  std::vector<Motor> m_motors{};    /**< Motors described by `motors.lua`. */
-
-  std::string m_i2c_bus{};                    /**< Path of the I2C bus. */
-  std::uint8_t m_left_address{0};             /**< Address of the left board. */
-  std::uint8_t m_right_address{0};            /**< Address of the right board. */
-  double m_frequency{0.0};                    /**< Requested PWM frequency, in hertz. */
-  double m_min_pulse_us{0.0};                 /**< Pulse width for 0 degrees, in microseconds. */
-  double m_max_pulse_us{0.0};                 /**< Pulse width for 180 degrees, in microseconds. */
-  int m_motors_per_side{0};                   /**< Motors generated for each side of the robot. */
-  bool m_startup_test{false};                 /**< Whether to sweep the joints at startup. */
-  std::chrono::milliseconds m_settle_time{0}; /**< Pause after each servo command. */
-  std::string m_motors_script{};              /**< File name of the motor table script. */
-  std::string m_homing_script{};              /**< File name of the rest position script. */
+  // Declared largest first so the node carries no avoidable padding: the two
+  // boards, then the interpreter, the strings, the vector, and finally the
+  // scalars in decreasing width.
+  sol::state lua_;                           /**< Lua interpreter used for the configuration. */
+  std::string config_directory_;             /**< Where the Lua scripts were installed. */
+  std::string i2c_bus_;                      /**< Path of the I2C bus. */
+  std::string motors_script_;                /**< File name of the motor table script. */
+  std::string homing_script_;                /**< File name of the rest position script. */
+  std::vector<Motor> motors_;                /**< Motors described by the motor table script. */
+  double frequency_{0.0};                    /**< Requested PWM frequency, in hertz. */
+  double min_pulse_us_{0.0};                 /**< Pulse width for 0 degrees, in microseconds. */
+  double max_pulse_us_{0.0};                 /**< Pulse width for 180 degrees, in microseconds. */
+  std::chrono::milliseconds settle_time_{0}; /**< Pause after each servo command. */
+  int motors_per_side_{0};                   /**< Motors generated for each side of the robot. */
+  std::uint8_t left_address_{0};             /**< Address of the left board. */
+  std::uint8_t right_address_{0};            /**< Address of the right board. */
+  bool startup_test_{false};                 /**< Whether to sweep the joints at startup. */
 };
 
 }  // namespace hexapod

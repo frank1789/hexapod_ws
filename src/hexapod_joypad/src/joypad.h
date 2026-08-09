@@ -29,11 +29,12 @@ class Joypad : public rclcpp::Node {
  private:
   void controllerCallback(const sensor_msgs::msg::Joy::ConstSharedPtr& msg);
 
-  Trigger L2_triggers_;
-  Trigger R2_triggers_;
+  // Declared largest first so the node carries no avoidable padding.
   ThumbStick L3_thumbstick_;
   ThumbStick R3_thumbstick_;
   std::unordered_map<int, Button> buttons_;
+  Trigger L2_triggers_;
+  Trigger R2_triggers_;
 
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscriber_;
   rclcpp::Publisher<hexapod_msgs::msg::JoypadTrigger>::SharedPtr trigger_publisher_;

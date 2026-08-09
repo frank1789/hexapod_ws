@@ -109,17 +109,17 @@ class Motor {
 
   friend bool operator==(const Motor& lhs, const Motor& rhs);
   friend bool operator!=(const Motor& lhs, const Motor& rhs);
-  friend std::ostream& operator<<(std::ostream& os, const Motor& t_motor);
+  friend std::ostream& operator<<(std::ostream& stream, const Motor& t_motor);
 
  private:
   auto Reflect() const;
 
   static double ValidateAngle(const double);
 
-  std::string m_name{};
-  double m_angle{0.0};
+  std::string name_{};
+  double angle_{0.0};
   /** @brief -1 marks a motor that has not been assigned a channel yet. */
-  int m_pin{-1};
+  int pin_{-1};
 };
 
 /**
@@ -149,7 +149,7 @@ bool operator!=(const Motor& lhs, const Motor& rhs);
  * @param t_motor the Motor object
  * @return the stream
  */
-std::ostream& operator<<(std::ostream& os, const Motor& t_motor);
+std::ostream& operator<<(std::ostream& stream, const Motor& t_motor);
 
 }  // namespace hexapod
 

@@ -12,5 +12,8 @@ colcon build \
   --cmake-args -DCMAKE_BUILD_TYPE=Release \
   "$@"
 
+# clangd and a standalone clang-tidy both want a single database at the root.
+"$(dirname "${BASH_SOURCE[0]}")/scripts/merge-compile-commands.sh"
+
 echo
 echo "Done. Source the overlay with:  source install/setup.bash"

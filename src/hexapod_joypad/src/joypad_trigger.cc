@@ -1,11 +1,20 @@
 #include "joypad_trigger.h"
 
 #include <iomanip>
+#include <utility>
 
-Trigger::Trigger(const std::string& name) : ts_name_(name), raw_value_(0.0), value_(0.0) {}
+namespace {
+
+/** @brief Decimal places used when streaming a value. */
+constexpr int kPrecision{5};
+
+}  // namespace
+
+Trigger::Trigger(std::string name) : ts_name_(std::move(name)) {}
 
 // normalize(value), not normalize(value_): value_ is still uninitialised here.
-Trigger::Trigger(const std::string& name, double value) : ts_name_(name), raw_value_(value), value_(normalize(value)) {}
+Trigger::Trigger(std::string name, double value)
+    : ts_name_(std::move(name)), raw_value_(value), value_(normalize(value)) {}
 
 void Trigger::setValue(double value) {
   raw_value_ = value;
@@ -20,11 +29,11 @@ double Trigger::getValue() const { return value_; }
 
 // clang-format off
 double Trigger::normalize(double value) {
-  return (((value - kValueMin_) / ((kValueMax_ - kValueMin_) * (kMax_ - kMin_))) + kMin_);
+  return (((value - kValueMin) / ((kValueMax - kValueMin) * (kMax - kMin))) + kMin);
 }
 // clang-format on
 
-std::ostream& operator<<(std::ostream& os, const Trigger& ts) {
-  os.precision(5);
-  return os << "trigger " << ts.ts_name_ << " magnitude: " << std::fixed << ts.value_;
+std::ostream& operator<<(std::ostream& stream, const Trigger& trigger) {
+  stream.precision(kPrecision);
+  return stream << "trigger " << trigger.ts_name_ << " magnitude: " << std::fixed << trigger.value_;
 }

@@ -52,6 +52,9 @@ namespace {
 /** @brief Logger shared by every peripheral. */
 rclcpp::Logger Log() { return rclcpp::get_logger("i2c"); }
 
+/** @brief Mask of the byte the SMBus helper returns. */
+constexpr int kByteMask{0xFF};
+
 /** @brief Pause between two attempts at the same transfer. */
 constexpr std::chrono::milliseconds kRetryDelay{2};
 
@@ -67,47 +70,46 @@ bool IsTransient(const int t_error) {
 
 }  // namespace
 
-i2cPeripheral::i2cPeripheral(const std::string& t_device, const std::uint8_t t_address)
-    : m_device(t_device), m_address(t_address) {
+I2cPeripheral::I2cPeripheral(const std::string& t_device, const std::uint8_t t_address)
+    : device_(t_device), address_(t_address) {
   OpenBus(t_device);
   ConnectToPeripheral(t_address);
   RCLCPP_DEBUG(Log(), "opened %s for device 0x%02X", t_device.c_str(), static_cast<unsigned>(t_address));
 }
 
-i2cPeripheral::i2cPeripheral(i2cPeripheral&& other) noexcept
-    : m_bus_fd(std::exchange(other.m_bus_fd, kClosed)),
-      m_device(std::move(other.m_device)),
-      m_address(other.m_address) {}
+I2cPeripheral::I2cPeripheral(I2cPeripheral&& other) noexcept
+    : device_(std::move(other.device_)), bus_fd_(std::exchange(other.bus_fd_, kClosed)), address_(other.address_) {}
 
-i2cPeripheral& i2cPeripheral::operator=(i2cPeripheral&& other) noexcept {
+I2cPeripheral& I2cPeripheral::operator=(I2cPeripheral&& other) noexcept {
   if (this != &other) {
-    if (m_bus_fd != kClosed) {
-      close(m_bus_fd);
+    if (bus_fd_ != kClosed) {
+      close(bus_fd_);
     }
-    m_bus_fd = std::exchange(other.m_bus_fd, kClosed);
-    m_device = std::move(other.m_device);
-    m_address = other.m_address;
+    bus_fd_ = std::exchange(other.bus_fd_, kClosed);
+    device_ = std::move(other.device_);
+    address_ = other.address_;
   }
   return *this;
 }
 
-i2cPeripheral::~i2cPeripheral() {
+I2cPeripheral::~I2cPeripheral() {
   // Guarded: a default constructed object never opened anything, and closing an
   // uninitialised descriptor would close whatever file happens to hold it.
-  if (m_bus_fd != kClosed) {
-    close(m_bus_fd);
+  if (bus_fd_ != kClosed) {
+    close(bus_fd_);
   }
 }
 
-bool i2cPeripheral::IsOpen() const noexcept { return m_bus_fd != kClosed; }
+bool I2cPeripheral::IsOpen() const noexcept { return bus_fd_ != kClosed; }
 
-void i2cPeripheral::WriteRegisterByte(const std::uint8_t t_register_address, const std::uint8_t t_value) {
+void I2cPeripheral::WriteRegisterByte(const std::uint8_t t_register_address, const std::uint8_t t_value) {
   i2c_smbus_data data{};
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access) kernel ABI
   data.byte = t_value;
 
   for (auto attempt = 1; attempt <= kMaxAttempts; ++attempt) {
     errno = 0;
-    const auto failed = i2c_smbus_access(m_bus_fd, I2C_SMBUS_WRITE, t_register_address, I2C_SMBUS_BYTE_DATA, &data);
+    const auto failed = i2c_smbus_access(bus_fd_, I2C_SMBUS_WRITE, t_register_address, I2C_SMBUS_BYTE_DATA, &data);
     if (failed == 0) {
       return;
     }
@@ -115,8 +117,8 @@ void i2cPeripheral::WriteRegisterByte(const std::uint8_t t_register_address, con
     const auto saved_errno = errno;
     if (!IsTransient(saved_errno) || attempt == kMaxAttempts) {
       const auto message = "Could not write value (" + std::to_string(t_value) + ") to register " +
-                           std::to_string(t_register_address) + " of device " + std::to_string(m_address) + " on " +
-                           m_device;
+                           std::to_string(t_register_address) + " of device " + std::to_string(address_) + " on " +
+                           device_;
       throw std::system_error(saved_errno, std::system_category(), message);
     }
 
@@ -126,14 +128,15 @@ void i2cPeripheral::WriteRegisterByte(const std::uint8_t t_register_address, con
   }
 }
 
-std::uint8_t i2cPeripheral::ReadRegisterByte(const std::uint8_t t_register_address) {
+std::uint8_t I2cPeripheral::ReadRegisterByte(const std::uint8_t t_register_address) {
   i2c_smbus_data data{};
 
   for (auto attempt = 1; attempt <= kMaxAttempts; ++attempt) {
     errno = 0;
-    const auto failed = i2c_smbus_access(m_bus_fd, I2C_SMBUS_READ, t_register_address, I2C_SMBUS_BYTE_DATA, &data);
+    const auto failed = i2c_smbus_access(bus_fd_, I2C_SMBUS_READ, t_register_address, I2C_SMBUS_BYTE_DATA, &data);
     if (failed == 0) {
-      return data.byte & 0xFF;
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access) kernel ABI
+      return data.byte & kByteMask;
     }
 
     // errno, not the return value: i2c_smbus_access reports -1 and leaves the
@@ -141,7 +144,7 @@ std::uint8_t i2cPeripheral::ReadRegisterByte(const std::uint8_t t_register_addre
     const auto saved_errno = errno;
     if (!IsTransient(saved_errno) || attempt == kMaxAttempts) {
       const auto message = "Could not read register " + std::to_string(t_register_address) + " of device " +
-                           std::to_string(m_address) + " on " + m_device;
+                           std::to_string(address_) + " on " + device_;
       throw std::system_error(saved_errno, std::system_category(), message);
     }
 
@@ -153,19 +156,19 @@ std::uint8_t i2cPeripheral::ReadRegisterByte(const std::uint8_t t_register_addre
   return 0;  // unreachable: the loop either returns or throws.
 }
 
-void i2cPeripheral::OpenBus(const std::string& t_device) {
-  m_bus_fd = open(t_device.c_str(), O_RDWR);
-  if (m_bus_fd < 0) {
-    m_bus_fd = kClosed;
+void I2cPeripheral::OpenBus(const std::string& t_device) {
+  bus_fd_ = open(t_device.c_str(), O_RDWR);
+  if (bus_fd_ < 0) {
+    bus_fd_ = kClosed;
     throw std::system_error(
         errno, std::system_category(),
         "Could not open i2c bus " + t_device + " (is the I2C interface enabled and is the user in the i2c group?)");
   }
 }
 
-void i2cPeripheral::ConnectToPeripheral(const std::uint8_t t_address) {
-  if (ioctl(m_bus_fd, I2C_SLAVE, t_address) < 0) {
+void I2cPeripheral::ConnectToPeripheral(const std::uint8_t t_address) {
+  if (ioctl(bus_fd_, I2C_SLAVE, t_address) < 0) {
     throw std::system_error(errno, std::system_category(),
-                            "Could not select device " + std::to_string(t_address) + " on " + m_device);
+                            "Could not select device " + std::to_string(t_address) + " on " + device_);
   }
 }

@@ -52,19 +52,19 @@ constexpr int kTestStepDegree{5};       /**< Sweep granularity of the startup te
 }  // namespace
 
 ServoController::ServoController() : rclcpp::Node("servomotors_node") {
-  m_motors.reserve(kReservedMotors);
-  lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::table, sol::lib::debug);
+  motors_.reserve(kReservedMotors);
+  lua_.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::table, sol::lib::debug);
 
-  m_config_directory = ament_index_cpp::get_package_share_directory("hexapod_servomotor") + "/config";
-  RCLCPP_INFO_STREAM(get_logger(), "configuration directory: " << m_config_directory);
+  config_directory_ = ament_index_cpp::get_package_share_directory("hexapod_servomotor") + "/config";
+  RCLCPP_INFO_STREAM(get_logger(), "configuration directory: " << config_directory_);
 
   DeclareParameters();
   OpenDrivers();
   RegisterMotors();
   RestoreDefaultPosition();
 
-  RCLCPP_INFO(get_logger(), "servomotors node ready with %zu motors", m_motors.size());
-  if (m_startup_test) {
+  RCLCPP_INFO(get_logger(), "servomotors node ready with %zu motors", motors_.size());
+  if (startup_test_) {
     RCLCPP_WARN(get_logger(),
                 "perform_startup_test is enabled: every joint will sweep its full travel, "
                 "make sure the robot is supported off the ground");
@@ -78,7 +78,7 @@ ServoController::~ServoController() {
 }
 
 void ServoController::DeclareParameters() {
-  m_i2c_bus = declare_parameter<std::string>("i2c_bus", "/dev/i2c-1");
+  i2c_bus_ = declare_parameter<std::string>("i2c_bus", "/dev/i2c-1");
 
   const auto left = declare_parameter<int>("left_driver_address", 0x40);
   const auto right = declare_parameter<int>("right_driver_address", 0x41);
@@ -86,27 +86,27 @@ void ServoController::DeclareParameters() {
     throw std::invalid_argument("left_driver_address and right_driver_address are both " + std::to_string(left) +
                                 ": the two boards must be strapped to different addresses");
   }
-  m_left_address = static_cast<std::uint8_t>(left);
-  m_right_address = static_cast<std::uint8_t>(right);
+  left_address_ = static_cast<std::uint8_t>(left);
+  right_address_ = static_cast<std::uint8_t>(right);
 
-  m_frequency = declare_parameter<double>("pwm_frequency", kDefaultPWMFreq);
-  m_min_pulse_us = declare_parameter<double>("min_pulse_width_us", kDefaultMinPulseWidthUs);
-  m_max_pulse_us = declare_parameter<double>("max_pulse_width_us", kDefaultMaxPulseWidthUs);
-  if (m_min_pulse_us >= m_max_pulse_us) {
-    throw std::invalid_argument("min_pulse_width_us (" + std::to_string(m_min_pulse_us) +
-                                ") must be smaller than max_pulse_width_us (" + std::to_string(m_max_pulse_us) + ")");
+  frequency_ = declare_parameter<double>("pwm_frequency", kDefaultPWMFreq);
+  min_pulse_us_ = declare_parameter<double>("min_pulse_width_us", kDefaultMinPulseWidthUs);
+  max_pulse_us_ = declare_parameter<double>("max_pulse_width_us", kDefaultMaxPulseWidthUs);
+  if (min_pulse_us_ >= max_pulse_us_) {
+    throw std::invalid_argument("min_pulse_width_us (" + std::to_string(min_pulse_us_) +
+                                ") must be smaller than max_pulse_width_us (" + std::to_string(max_pulse_us_) + ")");
   }
 
   // A pulse cannot outlast the period it lives in.
-  const auto period_us = 1e6 / m_frequency;
-  if (m_max_pulse_us >= period_us) {
-    throw std::invalid_argument("max_pulse_width_us (" + std::to_string(m_max_pulse_us) + ") does not fit in the " +
-                                std::to_string(period_us) + " us period of a " + std::to_string(m_frequency) +
+  const auto period_us = 1e6 / frequency_;
+  if (max_pulse_us_ >= period_us) {
+    throw std::invalid_argument("max_pulse_width_us (" + std::to_string(max_pulse_us_) + ") does not fit in the " +
+                                std::to_string(period_us) + " us period of a " + std::to_string(frequency_) +
                                 " Hz signal");
   }
 
-  m_motors_per_side = declare_parameter<int>("motors_per_side", kDefaultMotorsPerSide);
-  if (m_motors_per_side <= 0 || m_motors_per_side > adafruit::pca9685::kChannelCount) {
+  motors_per_side_ = declare_parameter<int>("motors_per_side", kDefaultMotorsPerSide);
+  if (motors_per_side_ <= 0 || motors_per_side_ > adafruit::pca9685::kChannelCount) {
     throw std::invalid_argument("motors_per_side must be between 1 and " +
                                 std::to_string(adafruit::pca9685::kChannelCount));
   }
@@ -115,40 +115,40 @@ void ServoController::DeclareParameters() {
   if (settle_ms < 0) {
     throw std::invalid_argument("settle_time_ms cannot be negative");
   }
-  m_settle_time = std::chrono::milliseconds{settle_ms};
+  settle_time_ = std::chrono::milliseconds{settle_ms};
 
-  m_startup_test = declare_parameter<bool>("perform_startup_test", false);
-  m_motors_script = declare_parameter<std::string>("motors_script", "motors.lua");
-  m_homing_script = declare_parameter<std::string>("homing_script", "homing.lua");
+  startup_test_ = declare_parameter<bool>("perform_startup_test", false);
+  motors_script_ = declare_parameter<std::string>("motors_script", "motors.lua");
+  homing_script_ = declare_parameter<std::string>("homing_script", "homing.lua");
 
   RCLCPP_INFO(get_logger(),
               "configuration: bus %s, boards 0x%02X and 0x%02X, %.1f Hz, pulse %.0f-%.0f us, "
               "settle %d ms",
-              m_i2c_bus.c_str(), static_cast<unsigned>(m_left_address), static_cast<unsigned>(m_right_address),
-              m_frequency, m_min_pulse_us, m_max_pulse_us,
+              i2c_bus_.c_str(), static_cast<unsigned>(left_address_), static_cast<unsigned>(right_address_), frequency_,
+              min_pulse_us_, max_pulse_us_,
               // declare_parameter<int> hands back an int64_t.
               static_cast<int>(settle_ms));
 }
 
 void ServoController::OpenDrivers() {
-  m_servo_driver_left.Initialize(m_i2c_bus, m_left_address);
-  m_servo_driver_right.Initialize(m_i2c_bus, m_right_address);
+  servo_driver_left_.Initialize(i2c_bus_, left_address_);
+  servo_driver_right_.Initialize(i2c_bus_, right_address_);
 
-  m_servo_driver_left.SetPWMFrequency(m_frequency);
-  m_servo_driver_right.SetPWMFrequency(m_frequency);
+  servo_driver_left_.SetPWMFrequency(frequency_);
+  servo_driver_right_.SetPWMFrequency(frequency_);
 
-  const auto actual = m_servo_driver_left.GetActualFrequency();
-  if (std::abs(actual - m_frequency) > 0.5) {
-    RCLCPP_WARN(get_logger(), "pulse widths are computed for %.2f Hz, not the requested %.2f Hz", actual, m_frequency);
+  const auto actual = servo_driver_left_.GetActualFrequency();
+  if (std::abs(actual - frequency_) > 0.5) {
+    RCLCPP_WARN(get_logger(), "pulse widths are computed for %.2f Hz, not the requested %.2f Hz", actual, frequency_);
   }
 }
 
-bool ServoController::StartupTestRequested() const noexcept { return m_startup_test; }
+bool ServoController::StartupTestRequested() const noexcept { return startup_test_; }
 
 sol::protected_function ServoController::LoadScript(const std::string& t_filename, const std::string& t_entry_point) {
-  const auto path = m_config_directory + "/" + t_filename;
+  const auto path = config_directory_ + "/" + t_filename;
 
-  auto script = lua.load_file(path);
+  auto script = lua_.load_file(path);
   if (!script.valid()) {
     const sol::error err = script;
     throw std::runtime_error("cannot load Lua script \"" + path + "\": " + err.what());
@@ -160,7 +160,7 @@ sol::protected_function ServoController::LoadScript(const std::string& t_filenam
     throw std::runtime_error("cannot execute Lua script \"" + path + "\": " + err.what());
   }
 
-  sol::protected_function entry_point = lua[t_entry_point];
+  sol::protected_function entry_point = lua_[t_entry_point];
   if (!entry_point.valid()) {
     throw std::runtime_error("Lua script \"" + path + "\" does not define \"" + t_entry_point + "\"");
   }
@@ -170,9 +170,9 @@ sol::protected_function ServoController::LoadScript(const std::string& t_filenam
 }
 
 void ServoController::PerformTest() {
-  RCLCPP_WARN(get_logger(), "starting the joint sweep over %zu motors", m_motors.size());
+  RCLCPP_WARN(get_logger(), "starting the joint sweep over %zu motors", motors_.size());
 
-  for (auto& motor : m_motors) {
+  for (auto& motor : motors_) {
     RCLCPP_INFO_STREAM(get_logger(), "sweeping " << motor.GetNameMotor());
     for (auto angle = static_cast<int>(kMinAngleDegree); angle <= static_cast<int>(kMaxAngleDegree);
          angle += kTestStepDegree) {
@@ -187,9 +187,9 @@ void ServoController::PerformTest() {
 }
 
 void ServoController::RestoreDefaultPosition() {
-  auto get_homing_angle = LoadScript(m_homing_script, "homing");
+  auto get_homing_angle = LoadScript(homing_script_, "homing");
 
-  for (auto& motor : m_motors) {
+  for (auto& motor : motors_) {
     const sol::protected_function_result result = get_homing_angle(motor.GetNameMotor());
     if (!result.valid()) {
       const sol::error err = result;
@@ -198,7 +198,7 @@ void ServoController::RestoreDefaultPosition() {
 
     const sol::optional<double> angle = result;
     if (!angle.has_value()) {
-      throw std::runtime_error("\"" + m_homing_script + "\" defines no angle for motor \"" + motor.GetNameMotor() +
+      throw std::runtime_error("\"" + homing_script_ + "\" defines no angle for motor \"" + motor.GetNameMotor() +
                                "\"");
     }
 
@@ -206,57 +206,57 @@ void ServoController::RestoreDefaultPosition() {
     WriteOnMotor(motor);
   }
 
-  RCLCPP_INFO(get_logger(), "all %zu motors moved to their rest position", m_motors.size());
+  RCLCPP_INFO(get_logger(), "all %zu motors moved to their rest position", motors_.size());
 }
 
 void ServoController::RegisterMotors() {
-  auto generator = LoadScript(m_motors_script, "generate_motors_configuration");
+  auto generator = LoadScript(motors_script_, "generate_motors_configuration");
 
   for (const auto& side : {"L", "R"}) {
-    const sol::protected_function_result result = generator(m_motors_per_side, side);
+    const sol::protected_function_result result = generator(motors_per_side_, side);
     if (!result.valid()) {
       const sol::error err = result;
       throw std::runtime_error(std::string("generate_motors_configuration(\"") + side + "\") failed: " + err.what());
     }
   }
 
-  const sol::optional<sol::table> motors_table = lua["Motors"];
+  const sol::optional<sol::table> motors_table = lua_["Motors"];
   if (!motors_table.has_value() || motors_table->size() == 0) {
-    throw std::runtime_error("\"" + m_motors_script +
+    throw std::runtime_error("\"" + motors_script_ +
                              "\" produced no motor: the global \"Motors\" table is missing "
                              "or empty");
   }
 
   for (const auto& entry : *motors_table) {
     if (entry.second.get_type() != sol::type::table) {
-      throw std::runtime_error("\"" + m_motors_script + "\": every entry of \"Motors\" must be a {name, pin} table");
+      throw std::runtime_error("\"" + motors_script_ + "\": every entry of \"Motors\" must be a {name, pin} table");
     }
 
     auto motor_entry = entry.second.as<sol::table>();
     const sol::optional<std::string> name = motor_entry[1];
     const sol::optional<int> pin = motor_entry[2];
     if (!name.has_value() || !pin.has_value()) {
-      throw std::runtime_error("\"" + m_motors_script + "\": an entry of \"Motors\" is not a valid {name, pin} pair");
+      throw std::runtime_error("\"" + motors_script_ + "\": an entry of \"Motors\" is not a valid {name, pin} pair");
     }
 
     // The pin becomes a PCA9685 channel, so it has to exist on the board.
     if (*pin < 0 || *pin >= adafruit::pca9685::kChannelCount) {
-      throw std::runtime_error("\"" + m_motors_script + "\": motor \"" + *name + "\" uses pin " + std::to_string(*pin) +
+      throw std::runtime_error("\"" + motors_script_ + "\": motor \"" + *name + "\" uses pin " + std::to_string(*pin) +
                                ", outside 0 to " + std::to_string(adafruit::pca9685::kChannelCount - 1));
     }
 
-    m_motors.emplace_back(*name, *pin);
-    RCLCPP_DEBUG_STREAM(get_logger(), "registered " << m_motors.back());
+    motors_.emplace_back(*name, *pin);
+    RCLCPP_DEBUG_STREAM(get_logger(), "registered " << motors_.back());
   }
 
-  RCLCPP_INFO(get_logger(), "registered %zu motors from \"%s\"", m_motors.size(), m_motors_script.c_str());
+  RCLCPP_INFO(get_logger(), "registered %zu motors from \"%s\"", motors_.size(), motors_script_.c_str());
 }
 
 void ServoController::WriteOnMotor(const Motor& t_motor) {
-  auto& driver = t_motor.GetNameMotor().starts_with("L") ? m_servo_driver_left : m_servo_driver_right;
+  auto& driver = t_motor.GetNameMotor().starts_with("L") ? servo_driver_left_ : servo_driver_right_;
 
   driver.SetSinglePWM(t_motor.GetPinMotor(), 0, PulseWidth(t_motor.GetAngle()));
-  std::this_thread::sleep_for(m_settle_time);
+  std::this_thread::sleep_for(settle_time_);
 }
 
 std::uint16_t ServoController::PulseWidth(const double t_angle) const {
@@ -266,10 +266,10 @@ std::uint16_t ServoController::PulseWidth(const double t_angle) const {
                 kMaxAngleDegree, angle);
   }
 
-  const auto pulse_us = map(angle, kMinAngleDegree, kMaxAngleDegree, m_min_pulse_us, m_max_pulse_us);
+  const auto pulse_us = map(angle, kMinAngleDegree, kMaxAngleDegree, min_pulse_us_, max_pulse_us_);
 
   // Ticks of the 12-bit counter, using the frequency the board really produces.
-  const auto frequency = m_servo_driver_left.GetActualFrequency();
+  const auto frequency = servo_driver_left_.GetActualFrequency();
   const auto ticks = std::lround(pulse_us * 1e-6 * frequency * (adafruit::pca9685::kCounterMax + 1));
 
   return static_cast<std::uint16_t>(std::clamp<long>(ticks, 0, static_cast<long>(adafruit::pca9685::kCounterMax)));

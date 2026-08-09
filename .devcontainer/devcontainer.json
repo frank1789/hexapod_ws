@@ -37,8 +37,9 @@
                 "cSpell.language": "en-GB",
                 "cSpell.import": ["${workspaceFolder}/cspell.config.yaml"],
                 "C_Cpp.intelliSenseEngine": "disabled",
+                // The merged database written by scripts/merge-compile-commands.sh
                 "clangd.arguments": [
-                    "--compile-commands-dir=${workspaceFolder}/build"
+                    "--compile-commands-dir=${workspaceFolder}"
                 ]
             }
         }

@@ -43,6 +43,15 @@ namespace adafruit {
 
 namespace {
 
+/** @brief Mask of the low byte of a 12-bit counter value. */
+constexpr std::uint16_t kByteMask{0xFF};
+
+/** @brief Shift that moves the high byte of a counter value into place. */
+constexpr int kByteShift{8};
+
+/** @brief How far the produced frequency may drift before it is worth a warning. */
+constexpr double kFrequencyTolerance{0.5};
+
 /** @brief Logger shared by every board, so the source is obvious in the log. */
 rclcpp::Logger Log() { return rclcpp::get_logger("pca9685"); }
 
@@ -58,7 +67,7 @@ std::string Hex(std::uint8_t t_value) {
 PCA9685::PCA9685(const std::string& t_device, const std::uint8_t t_address) { Initialize(t_device, t_address); }
 
 PCA9685::~PCA9685() {
-  if (m_i2c_device == nullptr) {
+  if (i2c_device_ == nullptr) {
     return;
   }
 
@@ -67,9 +76,9 @@ PCA9685::~PCA9685() {
   try {
     AllOutputsOff();
     Sleep();
-    RCLCPP_INFO(Log(), "board %s on %s: outputs off, device asleep", Hex(m_address).c_str(), m_device_path.c_str());
+    RCLCPP_INFO(Log(), "board %s on %s: outputs off, device asleep", Hex(address_).c_str(), device_path_.c_str());
   } catch (const std::exception& error) {
-    RCLCPP_ERROR(Log(), "board %s on %s: could not park the outputs: %s", Hex(m_address).c_str(), m_device_path.c_str(),
+    RCLCPP_ERROR(Log(), "board %s on %s: could not park the outputs: %s", Hex(address_).c_str(), device_path_.c_str(),
                  error.what());
   }
 }
@@ -82,32 +91,32 @@ void PCA9685::Initialize(const std::string& t_device, const std::uint8_t t_addre
 
   RCLCPP_INFO(Log(), "opening board %s on %s", Hex(t_address).c_str(), t_device.c_str());
 
-  m_device_path = t_device;
-  m_address = t_address;
-  m_i2c_device = std::make_unique<i2cPeripheral>(t_device, t_address);
+  device_path_ = t_device;
+  address_ = t_address;
+  i2c_device_ = std::make_unique<I2cPeripheral>(t_device, t_address);
 
   // Park the outputs before anything else, so a board that was left driving
   // servos by a previous run does not twitch while it is being configured.
   SetAllPWM(0, 0);
 
-  m_i2c_device->WriteRegisterByte(pca9685::kMode2, pca9685::kMode2TotemPole);
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, pca9685::kMode1AllCall);
+  i2c_device_->WriteRegisterByte(pca9685::kMode2, pca9685::kMode2TotemPole);
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, pca9685::kMode1AllCall);
   std::this_thread::sleep_for(pca9685::kOscillatorStartUp);
 
   Wake();
 
   // Read back what the board is actually doing rather than assuming a default.
-  m_prescale = m_i2c_device->ReadRegisterByte(pca9685::kPreScale);
-  m_frequency = pca9685::FrequencyFromPrescale(m_prescale);
+  prescale_ = i2c_device_->ReadRegisterByte(pca9685::kPreScale);
+  frequency_ = pca9685::FrequencyFromPrescale(prescale_);
 
-  RCLCPP_INFO(Log(), "board %s ready: prescale %u, output frequency %.2f Hz", Hex(m_address).c_str(),
-              static_cast<unsigned>(m_prescale), m_frequency);
+  RCLCPP_INFO(Log(), "board %s ready: prescale %u, output frequency %.2f Hz", Hex(address_).c_str(),
+              static_cast<unsigned>(prescale_), frequency_);
 }
 
-bool PCA9685::IsInitialised() const noexcept { return m_i2c_device != nullptr; }
+bool PCA9685::IsInitialised() const noexcept { return i2c_device_ != nullptr; }
 
 void PCA9685::EnsureInitialised(const char* t_operation) const {
-  if (m_i2c_device == nullptr) {
+  if (i2c_device_ == nullptr) {
     throw std::logic_error(std::string("PCA9685: ") + t_operation + " requested before Initialize()");
   }
 }
@@ -129,7 +138,7 @@ void PCA9685::EnsureValidCounter(const std::uint16_t t_value, const char* t_name
 }
 
 std::uint8_t PCA9685::ChannelRegister(const int t_channel) noexcept {
-  return static_cast<std::uint8_t>(pca9685::kLed0OnLow + pca9685::kRegistersPerChannel * t_channel);
+  return static_cast<std::uint8_t>(pca9685::kLed0OnLow + (pca9685::kRegistersPerChannel * t_channel));
 }
 
 void PCA9685::SetPWMFrequency(const double t_freq) {
@@ -150,42 +159,42 @@ void PCA9685::SetPWMFrequency(const double t_freq) {
   }
 
   // PRE_SCALE only accepts a write while the oscillator is stopped.
-  const auto previous_mode = m_i2c_device->ReadRegisterByte(pca9685::kMode1);
+  const auto previous_mode = i2c_device_->ReadRegisterByte(pca9685::kMode1);
   const auto sleep_mode = static_cast<std::uint8_t>((previous_mode & ~pca9685::kMode1Restart) | pca9685::kMode1Sleep);
 
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, sleep_mode);
-  m_i2c_device->WriteRegisterByte(pca9685::kPreScale, prescale);
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, previous_mode);
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, sleep_mode);
+  i2c_device_->WriteRegisterByte(pca9685::kPreScale, prescale);
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, previous_mode);
 
   // The data sheet requires SLEEP to be low for at least 500 us before RESTART.
   std::this_thread::sleep_for(pca9685::kOscillatorStartUp);
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(previous_mode | pca9685::kMode1Restart));
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(previous_mode | pca9685::kMode1Restart));
 
-  m_prescale = prescale;
-  m_frequency = pca9685::FrequencyFromPrescale(prescale);
+  prescale_ = prescale;
+  frequency_ = pca9685::FrequencyFromPrescale(prescale);
 
-  if (std::abs(m_frequency - t_freq) > 0.5) {
+  if (std::abs(frequency_ - t_freq) > kFrequencyTolerance) {
     // The prescaler is an integer, so the request is rarely met exactly. Say so:
     // a pulse width computed from the requested value would be slightly wrong.
-    RCLCPP_WARN(Log(), "board %s: requested %.2f Hz, prescale %u gives %.2f Hz", Hex(m_address).c_str(), t_freq,
-                static_cast<unsigned>(prescale), m_frequency);
+    RCLCPP_WARN(Log(), "board %s: requested %.2f Hz, prescale %u gives %.2f Hz", Hex(address_).c_str(), t_freq,
+                static_cast<unsigned>(prescale), frequency_);
   } else {
-    RCLCPP_INFO(Log(), "board %s: output frequency %.2f Hz (prescale %u)", Hex(m_address).c_str(), m_frequency,
+    RCLCPP_INFO(Log(), "board %s: output frequency %.2f Hz (prescale %u)", Hex(address_).c_str(), frequency_,
                 static_cast<unsigned>(prescale));
   }
 }
 
-double PCA9685::GetActualFrequency() const noexcept { return m_frequency; }
+double PCA9685::GetActualFrequency() const noexcept { return frequency_; }
 
 void PCA9685::SetAllPWM(const std::uint16_t t_on, const std::uint16_t t_off) {
   EnsureInitialised("SetAllPWM");
   EnsureValidCounter(t_on, "ON");
   EnsureValidCounter(t_off, "OFF");
 
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOnLow, t_on & 0xFF);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOnHigh, t_on >> 8);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOffLow, t_off & 0xFF);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOffHigh, t_off >> 8);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOnLow, t_on & kByteMask);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOnHigh, t_on >> kByteShift);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOffLow, t_off & kByteMask);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOffHigh, t_off >> kByteShift);
 }
 
 void PCA9685::SetSinglePWM(const int t_channel, const std::uint16_t t_on, const std::uint16_t t_off) {
@@ -195,12 +204,12 @@ void PCA9685::SetSinglePWM(const int t_channel, const std::uint16_t t_on, const 
   EnsureValidCounter(t_off, "OFF");
 
   const auto base = ChannelRegister(t_channel);
-  m_i2c_device->WriteRegisterByte(base + 0, t_on & 0xFF);
-  m_i2c_device->WriteRegisterByte(base + 1, t_on >> 8);
-  m_i2c_device->WriteRegisterByte(base + 2, t_off & 0xFF);
-  m_i2c_device->WriteRegisterByte(base + 3, t_off >> 8);
+  i2c_device_->WriteRegisterByte(base + 0, t_on & kByteMask);
+  i2c_device_->WriteRegisterByte(base + 1, t_on >> kByteShift);
+  i2c_device_->WriteRegisterByte(base + 2, t_off & kByteMask);
+  i2c_device_->WriteRegisterByte(base + 3, t_off >> kByteShift);
 
-  RCLCPP_DEBUG(Log(), "board %s channel %d: on %u, off %u", Hex(m_address).c_str(), t_channel,
+  RCLCPP_DEBUG(Log(), "board %s channel %d: on %u, off %u", Hex(address_).c_str(), t_channel,
                static_cast<unsigned>(t_on), static_cast<unsigned>(t_off));
 }
 
@@ -208,14 +217,14 @@ void PCA9685::SetPWMms(const int t_channel, const double t_milliseconds) {
   EnsureInitialised("SetPWMms");
   EnsureValidChannel(t_channel);
 
-  const auto period_ms = 1000.0 / m_frequency;
+  const auto period_ms = 1000.0 / frequency_;
   if (t_milliseconds < 0.0 || t_milliseconds > period_ms) {
     throw std::invalid_argument("PCA9685: a pulse of " + std::to_string(t_milliseconds) + " ms does not fit in the " +
                                 std::to_string(period_ms) + " ms period");
   }
 
   const auto ticks = std::lround(t_milliseconds * (pca9685::kCounterMax + 1) / period_ms);
-  SetSinglePWM(t_channel, 0, static_cast<std::uint16_t>(std::min<long>(ticks, pca9685::kCounterMax)));
+  SetSinglePWM(t_channel, 0, static_cast<std::uint16_t>(std::min<std::int64_t>(ticks, pca9685::kCounterMax)));
 }
 
 void PCA9685::SetChannelOff(const int t_channel) {
@@ -223,34 +232,34 @@ void PCA9685::SetChannelOff(const int t_channel) {
   EnsureValidChannel(t_channel);
 
   const auto base = ChannelRegister(t_channel);
-  m_i2c_device->WriteRegisterByte(base + 0, 0);
-  m_i2c_device->WriteRegisterByte(base + 1, 0);
-  m_i2c_device->WriteRegisterByte(base + 2, 0);
+  i2c_device_->WriteRegisterByte(base + 0, 0);
+  i2c_device_->WriteRegisterByte(base + 1, 0);
+  i2c_device_->WriteRegisterByte(base + 2, 0);
   // Bit 4 of the OFF high byte is the full-OFF flag.
-  m_i2c_device->WriteRegisterByte(base + 3, pca9685::kFullOnOffBit >> 8);
+  i2c_device_->WriteRegisterByte(base + 3, pca9685::kFullOnOffBit >> kByteShift);
 }
 
 void PCA9685::AllOutputsOff() {
   EnsureInitialised("AllOutputsOff");
 
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOnLow, 0);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOnHigh, 0);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOffLow, 0);
-  m_i2c_device->WriteRegisterByte(pca9685::kAllLedOffHigh, pca9685::kFullOnOffBit >> 8);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOnLow, 0);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOnHigh, 0);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOffLow, 0);
+  i2c_device_->WriteRegisterByte(pca9685::kAllLedOffHigh, pca9685::kFullOnOffBit >> kByteShift);
 }
 
 void PCA9685::Sleep() {
   EnsureInitialised("Sleep");
 
-  const auto mode = m_i2c_device->ReadRegisterByte(pca9685::kMode1);
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(mode | pca9685::kMode1Sleep));
+  const auto mode = i2c_device_->ReadRegisterByte(pca9685::kMode1);
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(mode | pca9685::kMode1Sleep));
 }
 
 void PCA9685::Wake() {
   EnsureInitialised("Wake");
 
-  const auto mode = m_i2c_device->ReadRegisterByte(pca9685::kMode1);
-  m_i2c_device->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(mode & ~pca9685::kMode1Sleep));
+  const auto mode = i2c_device_->ReadRegisterByte(pca9685::kMode1);
+  i2c_device_->WriteRegisterByte(pca9685::kMode1, static_cast<std::uint8_t>(mode & ~pca9685::kMode1Sleep));
   std::this_thread::sleep_for(pca9685::kOscillatorStartUp);
 }
 

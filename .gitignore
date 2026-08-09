@@ -87,3 +87,6 @@ Temporary Items
 
 # Visual Studio Code
 .vscode
+
+# Merged clangd database written by scripts/merge-compile-commands.sh
+compile_commands.json

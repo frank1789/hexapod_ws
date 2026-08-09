@@ -61,6 +61,9 @@ namespace adafruit {
  */
 class PCA9685 {
  public:
+  /** @brief Frequency assumed until the device reports its own prescaler. */
+  static constexpr double kDefaultFrequencyHz{50.0};
+
   /**
    * @brief Construct a driver that is not attached to any device yet.
    *
@@ -232,11 +235,12 @@ class PCA9685 {
   /** @brief Address of the first of the four registers of a channel. */
   [[nodiscard]] static std::uint8_t ChannelRegister(int t_channel) noexcept;
 
-  std::unique_ptr<i2cPeripheral> m_i2c_device{nullptr};
-  std::string m_device_path{};
-  std::uint8_t m_address{0};
-  double m_frequency{50.0};
-  std::uint8_t m_prescale{0};
+  // Declared largest first: the previous order cost eight bytes of padding.
+  std::string device_path_;
+  std::unique_ptr<I2cPeripheral> i2c_device_{nullptr};
+  double frequency_{kDefaultFrequencyHz};
+  std::uint8_t address_{0};
+  std::uint8_t prescale_{0};
 };
 
 }  // namespace adafruit

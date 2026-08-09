@@ -82,6 +82,29 @@ message layout.
 `clang-format` is the **only** C++ formatter. `ament_uncrustify` used to run alongside it with
 incompatible rules, so the two rewrote every file in turn; do not add a second formatter back.
 
+### Static analysis
+
+**clang-tidy runs during the compilation, never as a git hook** — it needs the full include path, so
+it belongs where that path exists. The build is expected to be free of findings; treat a new one as
+something to fix, not to silence.
+
+```sh
+colcon build --cmake-args -DHEXAPOD_ENABLE_CLANG_TIDY=OFF   # skip it for a quick build
+./scripts/merge-compile-commands.sh                          # refresh compile_commands.json
+```
+
+Each package exports its own `compile_commands.json`; `build_exapod.sh` merges them into one at the
+root of the workspace, which is what clangd is pointed at.
+
+Two exclusions in `.clang-tidy` are deliberate and documented there: `cppcoreguidelines-pro-type-vararg`
+(the `RCLCPP_*` macros are printf-style, there is no alternative API) and `modernize-use-trailing-return-type`
+(taste, and it would rewrite every signature). `readability-function-cognitive-complexity` is kept but
+set to `IgnoreMacros`, because the logging macros expand into branches — a three-line destructor
+scored 83 against a threshold of 25.
+
+`src/main.cc` and `src/servocontroller.cc` are excluded from the analysis via `SKIP_LINTING`: the
+pinned sol2 revision does not parse with clang, only with GCC. Everything else is analysed.
+
 The two local syntax checks skip with a notice when their prerequisites are missing (no clang, no
 sourced ROS, no `install/`), so committing works on a bare host — but then nothing has parsed your
 C++. Run them in the dev container before you consider a change finished.

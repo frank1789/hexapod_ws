@@ -1,6 +1,7 @@
 #include "joypad.h"
 
 #include <cstddef>
+#include <numbers>
 #include <string>
 #include <tuple>
 
@@ -9,14 +10,17 @@
 
 namespace {
 
-const std::string topic_btn{"joypad/button"};
-const std::string topic_tbs{"joypad/thumbstick"};
-const std::string topic_trg{"joypad/trigger"};
+const std::string kTopicButton{"joypad/button"};
+const std::string kTopicThumbstick{"joypad/thumbstick"};
+const std::string kTopicTrigger{"joypad/trigger"};
 
 constexpr int kQueueDepth{10};
 
-constexpr double kPi = 3.141592653589793238463;
-constexpr double radiantToDeg(double angle) { return ((angle * 180) / kPi); }
+/** @brief Degrees in half a turn, the numerator of the radian conversion. */
+constexpr double kDegreesPerHalfTurn{180.0};
+
+/** @brief Convert an angle from radians to degrees. */
+constexpr double radiantToDeg(double angle) { return (angle * kDegreesPerHalfTurn) / std::numbers::pi; }
 
 }  // namespace
 
@@ -48,9 +52,9 @@ Joypad::Joypad() : rclcpp::Node("controller_node") {
   joy_subscriber_ = create_subscription<sensor_msgs::msg::Joy>(
       "joy", kQueueDepth, [this](const sensor_msgs::msg::Joy::ConstSharedPtr& msg) { controllerCallback(msg); });
 
-  trigger_publisher_ = create_publisher<hexapod_msgs::msg::JoypadTrigger>(topic_trg, kQueueDepth);
-  thumbstick_publisher_ = create_publisher<hexapod_msgs::msg::JoypadThumbstick>(topic_tbs, kQueueDepth);
-  button_publisher_ = create_publisher<hexapod_msgs::msg::JoypadButton>(topic_btn, kQueueDepth);
+  trigger_publisher_ = create_publisher<hexapod_msgs::msg::JoypadTrigger>(kTopicTrigger, kQueueDepth);
+  thumbstick_publisher_ = create_publisher<hexapod_msgs::msg::JoypadThumbstick>(kTopicThumbstick, kQueueDepth);
+  button_publisher_ = create_publisher<hexapod_msgs::msg::JoypadButton>(kTopicButton, kQueueDepth);
 }
 
 void Joypad::controllerCallback(const sensor_msgs::msg::Joy::ConstSharedPtr& msg) {

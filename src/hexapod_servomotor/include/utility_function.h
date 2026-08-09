@@ -55,22 +55,22 @@ inline constexpr double kMaxAngleDegree{180.0};
 /**
  * @brief Rescale a value from one interval onto another, linearly.
  *
- * No clamping is applied: a value outside `[in_min, in_max]` maps outside
+ * No clamping is applied: an input outside `[in_min, in_max]` maps outside
  * `[out_min, out_max]` as well. Callers that must not overrun their output
  * range have to clamp themselves.
  *
  * @tparam T type of the value being rescaled
  * @tparam C type of the interval bounds
- * @param x value to rescale
+ * @param value value to rescale
  * @param in_min lower bound of the source interval
  * @param in_max upper bound of the source interval
  * @param out_min lower bound of the destination interval
  * @param out_max upper bound of the destination interval
- * @return @p x expressed in the destination interval
+ * @return @p value expressed in the destination interval
  */
 template <typename T, typename C>
-constexpr T map(T x, const C in_min, const C in_max, const C out_min, const C out_max) {
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+constexpr T map(T value, const C in_min, const C in_max, const C out_min, const C out_max) {
+  return ((value - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
 
 }  // namespace hexapod
