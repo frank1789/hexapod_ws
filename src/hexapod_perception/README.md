@@ -67,7 +67,7 @@ When the camera is running, it publishes to:
 
 ## Docker
 
-The camera requires USB device access. See `docker/compose.yaml` for the configuration.
+The camera requires USB device access. See `compose.yaml` for the configuration.
 
 ## Validation Scripts
 
@@ -84,7 +84,7 @@ The package includes scripts to validate camera permissions and Docker access:
 
 ```sh
 # First, enter the running container
-docker compose -f docker/compose.yaml exec hexapod bash
+docker compose exec hexapod bash
 
 # Then run the validation script
 ./src/hexapod_perception/scripts/test_docker_camera.sh
@@ -120,12 +120,12 @@ sudo usermod -aG video $USER
 
 ### Camera works on host but not in Docker
 
-1. Check device cgroup rules in `docker/compose.yaml`
+1. Check device cgroup rules in `compose.yaml`
 2. Verify `/dev/bus/usb` is mounted
 3. Run the Docker validation script:
 
 ```sh
-docker compose -f docker/compose.yaml exec hexapod \
+docker compose exec hexapod \
   ./src/hexapod_perception/scripts/test_docker_camera.sh
 ```
 

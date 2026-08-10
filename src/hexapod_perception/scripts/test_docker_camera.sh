@@ -25,7 +25,7 @@ if [ -f /.dockerenv ]; then
 else
     error "Not running in Docker container"
     echo "  Run this script inside the container:"
-    echo "  docker compose -f docker/compose.yaml exec hexapod bash"
+    echo "  docker compose exec hexapod bash"
     echo "  Then run: ./src/hexapod_perception/scripts/test_docker_camera.sh"
     exit 1
 fi
@@ -45,7 +45,7 @@ if ls /dev/video* >/dev/null 2>&1; then
     ok "Video devices accessible: $(ls /dev/video* | wc -l) device(s)"
 else
     warn "No /dev/video* devices found in container"
-    echo "  Check docker-compose.yaml device_cgroup_rules for 'c 81:* rmw'"
+    echo "  Check compose.yaml device_cgroup_rules for 'c 81:* rmw'"
 fi
 
 # Check USB bus
@@ -55,7 +55,7 @@ if [ -d /dev/bus/usb ]; then
     echo "  USB devices accessible: $usb_count"
 else
     error "USB bus not mounted"
-    echo "  Check docker-compose.yaml volumes for /dev/bus/usb"
+    echo "  Check compose.yaml volumes for /dev/bus/usb"
     exit 2
 fi
 
@@ -69,7 +69,7 @@ if command -v rs-enumerate-devices >/dev/null 2>&1; then
     else
         warn "No RealSense camera detected"
         echo "  If camera is connected to host, check:"
-        echo "  1. USB device passthrough in docker-compose.yaml"
+        echo "  1. USB device passthrough in compose.yaml"
         echo "  2. Device permissions on host system"
         exit 1
     fi

@@ -5,8 +5,8 @@ the intended way to put the robot on a Raspberry Pi 4 Model B or a Raspberry
 Pi 5 without installing a toolchain there.
 
 ```sh
-docker compose -f docker/compose.yaml up --build      # the robot
-docker compose -f docker/compose.yaml --profile dry up # no I2C hardware
+docker compose up -d --build      # the robot
+docker compose --profile dry up   # no I2C hardware
 ```
 
 ## Two stages
@@ -109,7 +109,7 @@ check for a process; checking that the topic exists catches it.
 One line:
 
 ```sh
-ROS_DISTRO=kilted docker compose -f docker/compose.yaml build
+ROS_DISTRO=kilted docker compose build
 ```
 
 `ROS_DISTRO` is a build argument threaded through both stages, and nothing in

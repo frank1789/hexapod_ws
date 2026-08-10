@@ -1,7 +1,12 @@
 # Running the hexapod on a Raspberry Pi 4B or 5.
 #
-#   docker compose -f docker/compose.yaml up --build          # the robot
-#   docker compose -f docker/compose.yaml --profile dry up     # no hardware
+#   docker compose up -d --build       # the robot
+#   docker compose --profile dry up    # no hardware
+#
+# This file sits at the root of the workspace under one of the names compose
+# looks for by itself, so no -f is needed. The Dockerfile and the entrypoint
+# stay in docker/; the build context is the workspace, because the image copies
+# src/ and vcpkg.json from it.
 #
 # Configuration is here rather than baked into the image: every value below is
 # an environment variable the launch file turns into a ROS parameter override,
@@ -11,7 +16,7 @@
 services:
   hexapod:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
       args:
         ROS_DISTRO: ${ROS_DISTRO:-jazzy}
@@ -85,7 +90,7 @@ services:
   hexapod-dry:
     profiles: ["dry"]
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile
       args:
         ROS_DISTRO: ${ROS_DISTRO:-jazzy}

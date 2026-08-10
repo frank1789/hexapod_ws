@@ -4,7 +4,7 @@
 # of the workspace uses for node parameters, so `ros2 param` and launch-time
 # overrides keep working. docker compose feeds the values that change per
 # deployment through environment variables, which the launch file turns into
-# parameter overrides — see docker/compose.yaml.
+# parameter overrides — see compose.yaml.
 #
 # The Python sender reads this same file, so the endpoint is written down once.
 /**:

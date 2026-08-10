@@ -11,7 +11,7 @@
 #   docker buildx build --platform linux/arm64 -f docker/Dockerfile -t hexapod:latest .
 #
 # Every version-specific value is an ARG: upgrading ROS is one line here or one
-# line in docker/compose.yaml, and nothing below hard-codes a distribution.
+# line in compose.yaml, and nothing below hard-codes a distribution.
 
 ARG ROS_DISTRO=jazzy
 

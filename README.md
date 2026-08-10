@@ -104,8 +104,8 @@ is the intended way to put the robot on a Pi without installing a toolchain
 there:
 
 ```sh
-docker compose -f docker/compose.yaml up --build          # the robot
-docker compose -f docker/compose.yaml --profile dry up    # no I2C hardware
+docker compose up -d --build          # the robot
+docker compose --profile dry up       # no I2C hardware
 ```
 
 Configuration is environment variables in the compose file, turned into ROS
