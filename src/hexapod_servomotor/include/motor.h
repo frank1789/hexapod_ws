@@ -1,12 +1,31 @@
 /**
  * @file motor.h
  * @author Francesco Argentieri (francesco.argentieri89@gmail.com)
- * @brief Simple class represents the Motor.
- * @version 0.1.0
+ * @brief One servo of the robot: a name, the channel it is wired to and its angle.
+ * @version 0.2.0
  * @date 2023-01-14
  *
- * @copyright Copyright (c) 2023
+ * @copyright Copyright (c) 2021-2026 Francesco Argentieri
  *
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #ifndef SERVOMOTOR_MOTOR_H_
@@ -90,16 +109,17 @@ class Motor {
 
   friend bool operator==(const Motor& lhs, const Motor& rhs);
   friend bool operator!=(const Motor& lhs, const Motor& rhs);
-  friend std::ostream& operator<<(std::ostream& os, const Motor& t_motor);
+  friend std::ostream& operator<<(std::ostream& stream, const Motor& t_motor);
 
  private:
   auto Reflect() const;
 
   static double ValidateAngle(const double);
 
-  std::string m_name;
-  double m_angle{0.0};
-  int m_pin;
+  std::string name_{};
+  double angle_{0.0};
+  /** @brief -1 marks a motor that has not been assigned a channel yet. */
+  int pin_{-1};
 };
 
 /**
@@ -129,7 +149,7 @@ bool operator!=(const Motor& lhs, const Motor& rhs);
  * @param t_motor the Motor object
  * @return the stream
  */
-std::ostream& operator<<(std::ostream& os, const Motor& t_motor);
+std::ostream& operator<<(std::ostream& stream, const Motor& t_motor);
 
 }  // namespace hexapod
 

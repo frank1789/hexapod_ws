@@ -1,0 +1,10 @@
+<type>(<scope>): <subject>
+# |<---- keep the subject under 52 characters --->|
+# type: feat fix docs style refactor perf test build ci chore revert
+# Leave the line below blank.
+
+# Wrap the body at 72 characters, like this ruler shows:
+# |<------------------ 72 characters ------------------------------>|
+# Explain what changed and why, not how. Reference issues at the end.
+#
+# Trailers such as Co-Authored-By: are exempt from the body limit.

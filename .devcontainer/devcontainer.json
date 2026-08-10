@@ -1,0 +1,47 @@
+// For format details, see https://aka.ms/devcontainer.json
+{
+    "name": "hexapod_ws (ROS 2)",
+    "build": {
+        "dockerfile": "Dockerfile.ros2",
+        "context": ".",
+        "args": {
+            // Bump these two to upgrade ROS 2 / clang; nothing else to change.
+            "ROS_DISTRO": "jazzy",
+            "LLVM_VERSION": "21",
+            "USERNAME": "${localEnv:USER}"
+        }
+    },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    // Stay non-root; the UID/GID are realigned to the host user so that files
+    // written in /workspace keep the right ownership.
+    "remoteUser": "${localEnv:USER}",
+    "updateRemoteUserUID": true,
+    "postCreateCommand": "bash .devcontainer/postCreate.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd",
+                "Ranch-Hand-Robotics.rde-pack",
+                "mutantdino.resourcemonitor",
+                "streetsidesoftware.code-spell-checker",
+                "EditorConfig.EditorConfig",
+                "mhutchie.git-graph",
+                "vscode-icons-team.vscode-icons"
+            ],
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                // British English; the word list lives in cspell.config.yaml.
+                "cSpell.language": "en-GB",
+                "cSpell.import": ["${workspaceFolder}/cspell.config.yaml"],
+                "C_Cpp.intelliSenseEngine": "disabled",
+                // The merged database written by scripts/merge-compile-commands.sh
+                "clangd.arguments": [
+                    "--compile-commands-dir=${workspaceFolder}"
+                ]
+            }
+        }
+    }
+}

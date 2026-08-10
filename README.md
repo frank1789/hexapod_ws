@@ -1,94 +1,197 @@
 # hexapod_ws
 
-- [hexapod_ws](#hexapod_ws)
-  - [Package hexapod_joypad](#package-hexapod_joypad)
-    - [Map buttons](#map-buttons)
-    - [Map axes](#map-axes)
-    - [Connect PS3 joypad](#connect-ps3-joypad)
-  - [Hexapod Messages](#hexapod-messages)
+ROS 2 workspace for an eighteen degree-of-freedom hexapod: a PS3 joypad drives
+eighteen servos through two Adafruit PCA9685 boards on the I²C bus of a
+Raspberry Pi.
 
-## Package hexapod_joypad
+![From the joypad to the joints](doc/images/data-flow.svg)
 
-At present, the hexapod_joypad package remaps the values of the buttons issued by the well-known [ps3joy](http://wiki.ros.org/ps3joy) package.
+- [Requirements](#requirements)
+- [Build](#build)
+- [Test](#test)
+- [Install](#install)
+- [Run](#run)
+- [Packages](#packages)
+- [Documentation](#documentation)
+- [Licence](#licence)
 
-> Compared to the original package, the documentation does not seem to correspond so the new map of buttons and values is attached.
+## Requirements
 
-- The values of the back triggers vary between 0.0 and 1.0
-- Thumsticks now follow the Cartesian axis convention, their values vary between -1.0 and 1.0
-moving them from left to right. Likewise from bottom to top. Consequently the neutral position corresponds to 0.0.
+| | |
+|---|---|
+| ROS 2 | Jazzy (any distribution works; nothing hard-codes one) |
+| Compiler | C++20, strict ISO, no GNU extensions |
+| System libraries | `liblua5.3-dev`, `libi2c-dev` |
+| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2), when not already installed |
+| Hardware | Raspberry Pi with I²C enabled, two PCA9685 boards, separate 5 V servo supply |
 
-To run the package just run the command from the terminal.
+The supported environment is the dev container in
+[`.devcontainer`](.devcontainer), which pins Ubuntu 24.04, ROS 2 Jazzy and
+clang. Upgrading either means changing `ROS_DISTRO` or `LLVM_VERSION` in
+`devcontainer.json` and rebuilding the image; nothing else is version-specific.
 
-```sh
-roslaunch hexapod_joypad hexapod_joypad.launch
-```
-
-### Map buttons
-
-The messages form ps3joypad:
-
-```sh
-buttons: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-```
-
-| Position  | Symbol | Description |
-|:---------:|:------:|:------------|
-|    1      | X      | cross button |
-|    2      | O      | circle button |
-|    3      | T      | triangle button |
-|    4      | Q      | square button |
-|    5      | L1     |
-|    6      | R1     |
-|    7      | L2     |
-|    8      | R2     |
-|    9      | SE     | select button |
-|   10      | ST     | start button |
-|   11      | PS     | PS button |
-|   12      | L3     |   |
-|   13      | R3     |   |
-|   14      | UP     | cross directional up
-|   15      | DW     | cross directional down
-|   16      | RT     | cross directional right
-|   17      | LT     | cross directional left
-
-### Map axes
-
-The messages form ps3joypad:
+Outside the container, install the dependencies with `rosdep`:
 
 ```sh
-axes: [-0.0, -0.0, 1.0, -0.0, -0.0, 1.0]
+source /opt/ros/$ROS_DISTRO/setup.bash
+rosdep install --from-paths src --ignore-src -y
 ```
 
-| Position  | Symbol | Description |
-|:---------:|:------:|:------------|
-|   1       | L3     | x axis   |
-|   2       | L3     | y axis   |
-|   3       | L2     | trigger  |
-|   4       | R3     | x axis   |
-|   5       | R3     | y axis   |
-|   6       | R2     | trigger  |
+## Build
 
-### Connect PS3 joypad
+```sh
+./build_exapod.sh                 # colcon build of the whole workspace, Release
+```
 
-Follow the [guide](https://pimylifeup.com/raspberry-pi-playstation-controllers/).
+or, for one package at a time:
 
-## Hexapod Messages
+```sh
+source /opt/ros/$ROS_DISTRO/setup.bash
+colcon build --symlink-install --packages-select hexapod_msgs
+colcon build --symlink-install --packages-select hexapod_servomotor
+```
 
-To subscribe to topics use the following strings:
+`--symlink-install` is worth having: the Lua scripts and the launch files are
+read from the install tree, so with symlinks an edit takes effect without
+rebuilding.
 
-- Joypad
-  - joypad/button
-  - joypad/thumbstick
-  - joypad/trigger
+Install the git hooks once per clone (the dev container does it for you):
 
-example for read custom message from joypad:
+```sh
+pre-commit install
+pre-commit run --all-files
+```
+
+## Test
+
+```sh
+colcon test --event-handlers console_direct-
+colcon test-result --all --verbose
+```
+
+**No test needs the robot.** They cover the joypad value remapping, the motor
+model and the angle-to-pulse mapping, the PCA9685 frequency arithmetic taken
+from the data sheet and its argument validation, the generated message fields,
+and the URDF together with every mesh it refers to. Anything that would open
+`/dev/i2c-*` is deliberately out of scope, so the suite runs on a laptop.
+
+Run one package on its own with `--packages-select`, for instance:
+
+```sh
+colcon test --packages-select hexapod_servomotor
+```
+
+`colcon test` exits quietly when a package has nothing to run, so read the
+counts from `colcon test-result` rather than trusting the exit code.
+
+## Install
+
+The workspace installs into `install/` and is used as an overlay:
+
+```sh
+source install/setup.bash
+```
+
+Add it to your shell profile to get it in every terminal:
+
+```sh
+echo "source $(pwd)/install/setup.bash" >> ~/.bashrc
+```
+
+### On the robot
+
+The servo node needs access to the I²C bus. Enable the interface and add
+yourself to the `i2c` group — logging out and back in is required for the group
+to take effect:
+
+```sh
+sudo raspi-config          # Interface Options -> I2C -> enable
+sudo usermod -aG i2c "$USER"
+```
+
+Check that both boards answer before running anything:
+
+```sh
+sudo apt install i2c-tools
+i2cdetect -y 1             # expect 40 and 41
+```
+
+If only `40` appears, the second board still has its stock address: solder its
+`A0` jumper. See [the wiring notes](doc/pca9685.md#wiring).
+
+## Run
+
+Everything at once — joystick driver, remapper and servos:
+
+```sh
+ros2 launch hexapod_joypad hexapod_joypad.launch.py
+```
+
+Without the hardware, on a development machine:
+
+```sh
+ros2 launch hexapod_joypad hexapod_joypad.launch.py with_servos:=false
+ros2 topic echo /joypad/thumbstick
+```
+
+Individual pieces:
+
+```sh
+# servos only, with the parameters from config/
+ros2 launch hexapod_servomotor hexapod_servomotor.launch.py
+
+# the URDF model in RViz, with joint sliders
+ros2 launch hexapod_description display.launch.py
+
+# a different joystick device, i.e. /dev/input/js1
+ros2 launch hexapod_joypad hexapod_joypad.launch.py device_id:=1
+
+# verbose, showing every register write
+ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args --log-level debug
+```
+
+> **Bench test.** `perform_startup_test:=true` sweeps every joint across its
+> whole travel at startup. It is off by default because it knocks an assembled
+> robot over. Only enable it with the body supported and the legs free.
+
+The node validates its configuration and the I²C bus before moving anything, and
+exits with a message rather than a guess if either is wrong. On exit — including
+a crash — both boards switch their outputs off, so the joints are left
+unpowered instead of holding their last command.
+
+## Packages
+
+| Package | Role |
+|---|---|
+| `hexapod_msgs` | `JoypadButton`, `JoypadThumbstick`, `JoypadTrigger` |
+| `hexapod_joypad` | Remaps `sensor_msgs/msg/Joy` into those messages |
+| `hexapod_servomotor` | Drives the servos through two PCA9685 boards |
+| `hexapod_description` | URDF model and meshes |
+
+Subscribing to the remapped topics:
 
 ```cpp
-const std::string topic_btn{"joypad/button"};
-const std::string topic_tbs{"joypad/thumbstick"};
-const std::string topic_trg{"joypad/trigger"};
+#include "hexapod_msgs/msg/joypad_trigger.hpp"
 
-// stuff
-subscriber_ = node_handler_.subscribe<hexapod_msgs::JoypadTrigger>(
-      topic_btn, 1, &Clss::functionCallback, this);
+// inside a class deriving from rclcpp::Node
+subscriber_ = create_subscription<hexapod_msgs::msg::JoypadTrigger>(
+    "joypad/trigger", 10,
+    std::bind(&Clss::functionCallback, this, std::placeholders::_1));
 ```
+
+The PS3 button and axis layout is documented in
+[the architecture notes](doc/architecture.md#the-joypad-chain). To pair the
+controller, follow [this guide](https://pimylifeup.com/raspberry-pi-playstation-controllers/).
+
+## Documentation
+
+| Document | Contents |
+|---|---|
+| [The PCA9685 servo board](doc/pca9685.md) | PWM generation, registers, timing, wiring, driver validation |
+| [Configuring the robot](doc/configuration.md) | Node parameters, the Lua scripts, tuning, reading the logs |
+| [Architecture](doc/architecture.md) | Packages, topics, failure behaviour |
+| [CLAUDE.md](CLAUDE.md) | Coding standard and working rules for this repository |
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Copyright © 2021-2026 Francesco Argentieri.

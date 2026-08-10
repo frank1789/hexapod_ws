@@ -1,0 +1,177 @@
+# syntax=docker/dockerfile:1
+#
+# Development image for hexapod_ws: ROS 2 + LLVM/clang toolchain, non-root user.
+#
+# Every version-specific value is an ARG and nothing below hard-codes a distro
+# or a compiler version, so upgrading is a one-line change:
+#
+#   docker build -f Dockerfile.ros2 -t hexapod-dev \
+#       --build-arg ROS_DISTRO=kilted --build-arg LLVM_VERSION=22 .
+#
+# The same ARGs are surfaced in devcontainer.json.
+
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION}
+
+ARG ROS_DISTRO=jazzy
+ARG LLVM_VERSION=21
+ARG USERNAME=dev
+ARG USER_UID=1000
+ARG USER_GID=${USER_UID}
+
+# ROS_DISTRO is exported, not just an ARG: entrypoint, .bashrc and postCreate
+# all read it, so they stay distro-agnostic.
+ENV ROS_DISTRO=${ROS_DISTRO} \
+    LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    SHELL=/bin/bash
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# --------------------------------------------------------------- base system
+# DEBIAN_FRONTEND is a build-time concern only, so it is exported per-RUN
+# instead of leaking into the running container's environment.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        bash-completion \
+        ca-certificates \
+        cppcheck \
+        curl \
+        gdb \
+        git \
+        git-lfs \
+        gnupg \
+        locales \
+        lsb-release \
+        python3 \
+        python3-pip \
+        python3-venv \
+        ssh \
+        sudo \
+        unzip \
+        valgrind \
+        wget \
+        zip \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------ project build dependencies
+# liblua5.3-dev: hexapod_servomotor does find_package(Lua 5.3 REQUIRED), which
+#                needs lua.h — the lua5.3 interpreter package alone is not enough.
+# libi2c-dev:    i2c-peripheral.cc includes <i2c/smbus.h> and the node links -li2c.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        libi2c-dev \
+        liblua5.3-dev \
+        lua5.3 \
+        ninja-build \
+        pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+# --------------------------------------------------------------------- ROS 2
+# The ros-apt-source .deb installs the keyring and the sources.list entry for
+# the running Ubuntu release, so no key handling is needed here.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && ROS_APT_SOURCE_VERSION="$(curl -fsSL https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
+        | grep -F '"tag_name"' | awk -F'"' '{print $4}')" \
+    && curl -fsSL -o /tmp/ros2-apt-source.deb \
+        "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo "${VERSION_CODENAME}")_all.deb" \
+    && apt-get update \
+    && apt-get install -y /tmp/ros2-apt-source.deb \
+    && rm -f /tmp/ros2-apt-source.deb \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ros-${ROS_DISTRO}-ros-base \
+        ros-${ROS_DISTRO}-joy \
+        ros-${ROS_DISTRO}-joint-state-publisher-gui \
+        ros-${ROS_DISTRO}-robot-state-publisher \
+        ros-${ROS_DISTRO}-rviz2 \
+        ros-${ROS_DISTRO}-xacro \
+        ros-${ROS_DISTRO}-ament-copyright \
+        ros-${ROS_DISTRO}-ament-flake8 \
+        ros-${ROS_DISTRO}-ament-uncrustify \
+        ros-dev-tools \
+    && rosdep init \
+    && rm -rf /var/lib/apt/lists/*
+
+# ---------------------------------------------------------------- LLVM/clang
+# llvm.sh installs exactly ${LLVM_VERSION}; the alternatives loop is written
+# against the same variable, so bumping LLVM_VERSION is the only edit needed.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends software-properties-common \
+    && curl -fsSL https://apt.llvm.org/llvm.sh -o /tmp/llvm.sh \
+    && chmod +x /tmp/llvm.sh \
+    && /tmp/llvm.sh ${LLVM_VERSION} \
+    && apt-get install -y --no-install-recommends \
+        clang-format-${LLVM_VERSION} \
+        clang-tidy-${LLVM_VERSION} \
+        clangd-${LLVM_VERSION} \
+    && rm -f /tmp/llvm.sh \
+    && for tool in clang clang++ clang-cpp clang-format clang-tidy clangd \
+                   lld ld.lld llvm-ar llvm-config llvm-cov llvm-nm llvm-objcopy \
+                   llvm-objdump llvm-profdata llvm-ranlib llvm-strip llvm-symbolizer; do \
+           if [ -x "/usr/bin/${tool}-${LLVM_VERSION}" ]; then \
+               update-alternatives --install "/usr/bin/${tool}" "${tool}" \
+                   "/usr/bin/${tool}-${LLVM_VERSION}" 100; \
+           fi; \
+       done \
+    && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------ python dev tooling
+# apt for what ROS imports from the system interpreter (ament_flake8 and the
+# ament test harness), pipx — one isolated venv per tool — for the CLI tools.
+# Plain `pip install` into the system environment fails on Ubuntu 24.04: it
+# tries to uninstall Debian-managed packages such as `packaging` and cannot.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        pipx \
+        python3-argcomplete \
+        python3-flake8 \
+        python3-pytest \
+        python3-pytest-cov \
+    && export PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin \
+    && pipx install black \
+    && pipx install commitizen \
+    && pipx install isort \
+    && pipx install pre-commit \
+    && rm -rf /var/lib/apt/lists/*
+
+# -------------------------------------------------------------- non-root user
+# Ubuntu 24.04 ships a stock "ubuntu" account on UID 1000, which collides with
+# the host UID we normally want. Free the requested UID/GID first so the
+# bind-mounted /workspace stays writable without any chown.
+RUN if getent passwd ${USER_UID} >/dev/null; then \
+        userdel -r "$(getent passwd ${USER_UID} | cut -d: -f1)" 2>/dev/null || true; \
+    fi \
+    && if ! getent group ${USER_GID} >/dev/null; then \
+        groupadd --gid ${USER_GID} ${USERNAME}; \
+    fi \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} \
+    && echo "${USERNAME} ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME} \
+    && mkdir -p /workspace \
+    && chown ${USER_UID}:${USER_GID} /workspace
+
+COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh
+
+USER ${USERNAME}
+WORKDIR /workspace
+
+# Interactive shells get ROS and, once built, the workspace overlay.
+# rosdep runs as the user because it writes into ${HOME}/.ros.
+RUN printf '%s\n' \
+        "source /opt/ros/${ROS_DISTRO}/setup.bash" \
+        'if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi' \
+        >> "${HOME}/.bashrc" \
+    && rosdep update --rosdistro "${ROS_DISTRO}"
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["bash"]

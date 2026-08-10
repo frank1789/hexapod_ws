@@ -1,235 +1,94 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.16)
 project(hexapod_servomotor)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++20)
+# std::string::starts_with is used by the driver dispatch.
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+# Strict ISO C++20: no GNU extensions, so the code stays portable across
+# compilers (-std=c++20 rather than -std=gnu++20).
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  hexapod_msgs
-)
+# --- Static analysis --------------------------------------------------------
+# clang-tidy runs as part of the compilation, never as a git hook: a check that
+# needs the full include path belongs where the include path exists. Disable it
+# with -DHEXAPOD_ENABLE_CLANG_TIDY=OFF for a quick build.
+option(HEXAPOD_ENABLE_CLANG_TIDY "Run clang-tidy while compiling" ON)
+if(HEXAPOD_ENABLE_CLANG_TIDY)
+  find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+  if(CLANG_TIDY_EXE)
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE}")
+  else()
+    message(STATUS "clang-tidy not found: static analysis is disabled")
+  endif()
+endif()
 
-## System dependencies are found with CMake's conventions
-# find_package(Boost REQUIRED COMPONENTS system)
+# One compile_commands.json per package; scripts/merge-compile-commands.sh joins
+# them into a single file at the root of the workspace for clangd.
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+find_package(hexapod_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(Lua 5.3 REQUIRED)
-include_directories(/usr/local/include ${LUA_INCLUDE_DIR})
 
+# sol2 is header-only: use the system package when available, otherwise fetch
+# the pinned revision.
 find_package(sol2 QUIET)
-if (NOT sol2_FOUND)
+if(NOT sol2_FOUND)
   include(FetchContent)
   FetchContent_Declare(
     sol2
     GIT_REPOSITORY https://github.com/ThePhD/sol2.git
-    GIT_TAG eba86625b707e3c8c99bbfc4624e51f42dc9e561
-  )
-  FetchContent_GetProperties(sol2)
-  if (NOT sol2_POPULATED) # Have we downloaded sol2 yet?
-    set(FETCHCONTENT_QUIET NO)
-    FetchContent_Populate(sol2)
-    add_subdirectory(${sol2_SOURCE_DIR} ${sol2_BINARY_DIR})
-    set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" "${sol2_SOURCE_DIR}/cmake" "${sol2_SOURCE_DIR}/cmake/Modules")
+    GIT_TAG eba86625b707e3c8c99bbfc4624e51f42dc9e561)
+  FetchContent_MakeAvailable(sol2)
+endif()
+
+# Hardware access and the motor model, without the ROS node around them, so the
+# tests can link the same code the robot runs.
+add_library(servomotor_core STATIC src/motor.cc src/i2c-peripheral.cc
+                                   src/PCA9685_driver.cc)
+target_include_directories(servomotor_core PUBLIC include)
+target_link_libraries(servomotor_core PUBLIC rclcpp::rclcpp i2c)
+
+add_executable(${PROJECT_NAME}_node src/main.cc src/servocontroller.cc)
+
+# clang-tidy re-parses each unit with clang, and the pinned sol2 revision does
+# not compile with it: optional_implementation.hpp calls this->construct() in a
+# template, which clang rejects under two-phase lookup. GCC builds it fine, so
+# the two units that include sol2 are left out of the analysis rather than
+# moving to an unpinned dependency. Everything else, including the whole driver,
+# is still analysed.
+set_source_files_properties(src/main.cc src/servocontroller.cc
+                            PROPERTIES SKIP_LINTING ON)
+
+target_include_directories(${PROJECT_NAME}_node PRIVATE include
+                                                        ${LUA_INCLUDE_DIR})
+
+target_link_libraries(
+  ${PROJECT_NAME}_node PRIVATE servomotor_core ament_index_cpp::ament_index_cpp
+                               ${hexapod_msgs_TARGETS} ${LUA_LIBRARIES} sol2)
+
+install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
+
+# The Lua scripts are read at runtime through
+# ament_index_cpp::get_package_share_directory(), so they must be installed.
+install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  # Neither test opens the I2C bus: they cover the motor model, the angle
+  # mapping and the argument validation, which all run before any transfer.
+  ament_add_gtest(test_servomotor test/test_motor.cpp test/test_pca9685.cpp)
+  if(TARGET test_servomotor)
+    target_link_libraries(test_servomotor servomotor_core)
   endif()
 endif()
 
-
-## Uncomment this if the package has a setup.py. This macro ensures
-## modules and global scripts declared therein get installed
-## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## To declare and build messages, services or actions from within this
-## package, follow these steps:
-## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
-## * In the file package.xml:
-##   * add a build_depend tag for "message_generation"
-##   * add a build_depend and a exec_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependency has been pulled in
-##     but can be declared for certainty nonetheless:
-##     * add a exec_depend tag for "message_runtime"
-## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
-
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
-
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   hexapod_msgs#   std_msgs
-# )
-
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-## To declare and build dynamic reconfigure parameters within this
-## package, follow these steps:
-## * In the file package.xml:
-##   * add a build_depend and a exec_depend tag for "dynamic_reconfigure"
-## * In this file (CMakeLists.txt):
-##   * add "dynamic_reconfigure" to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * uncomment the "generate_dynamic_reconfigure_options" section below
-##     and list every .cfg file to be processed
-
-## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
-
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if your package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES hexapod_servomotor
-#  CATKIN_DEPENDS hexapod_msgs roscpp rospy std_msgs
-#  DEPENDS system_lib
-)
-
-###########
-## Build ##
-###########
-
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
-include_directories(
-# include
-  ${catkin_INCLUDE_DIRS}
-  include
-)
-
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/hexapod_servomotor.cpp
-# )
-
-## Add cmake target dependencies of the library
-## as an example, code may need to be generated before libraries
-## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_node
-  src/main.cc
-  src/servocontroller.cc
-  src/i2c-peripheral.cc
-  src/PCA9685_driver.cc
-  src/motor.cc
-)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
-# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_node
-  ${catkin_LIBRARIES}
-  ${LUA_LIBRARIES}
-  i2c
-  sol2
-)
-
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-
-## Mark executable scripts (Python etc.) for installation
-## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark executables for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
-
-## Mark libraries for installation
-## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
-
-## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
-
-## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
-
-#############
-## Testing ##
-#############
-
-## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_hexapod_servomotor.cpp)
-# if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
-# endif()
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)
+ament_package()

@@ -1,0 +1,20 @@
+# Commitizen drives the commit messages and the version bumps.
+#
+#   cz commit          write a Conventional Commit interactively
+#   cz check --rev-range origin/main..HEAD
+#   cz bump            bump the version and update the changelog
+#
+# The message layout itself (52 character subject, 72 character body) is
+# enforced by scripts/check-commit-message.sh at the commit-msg stage.
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+version_scheme = "semver"
+tag_format = "v$version"
+major_version_zero = true
+update_changelog_on_bump = true
+annotated_tag = true
+
+# Keep the generated subject within the 52 character budget.
+[tool.commitizen.customize]
+message_length_limit = 52

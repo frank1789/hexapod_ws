@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 260" width="760" height="260" role="img"
+     aria-label="Data flow: the joy node publishes Joy messages, the controller node republishes them as hexapod messages, and the servomotor node drives the PCA9685 boards">
+  <rect x="0" y="0" width="760" height="260" fill="#ffffff"/>
+  <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
+
+    <text x="16" y="26" font-size="15" font-weight="bold">From the joypad to the joints</text>
+
+    <rect x="20" y="60" width="140" height="70" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="90" y="88" text-anchor="middle" font-weight="bold">joy_node</text>
+    <text x="90" y="108" text-anchor="middle" fill="#57606a">/dev/input/js0</text>
+
+    <line x1="160" y1="95" x2="230" y2="95" stroke="#0969da" stroke-width="2"/>
+    <polygon points="230,95 222,91 222,99" fill="#0969da"/>
+    <text x="195" y="86" text-anchor="middle" font-size="11" fill="#0969da">/joy</text>
+
+    <rect x="230" y="60" width="160" height="70" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="310" y="88" text-anchor="middle" font-weight="bold">controller_node</text>
+    <text x="310" y="108" text-anchor="middle" fill="#57606a">hexapod_joypad</text>
+
+    <line x1="390" y1="95" x2="460" y2="95" stroke="#0969da" stroke-width="2"/>
+    <polygon points="460,95 452,91 452,99" fill="#0969da"/>
+
+    <rect x="460" y="52" width="270" height="86" rx="6" fill="#f6f8fa" stroke="#8b949e" stroke-dasharray="4 3"/>
+    <text x="595" y="72" text-anchor="middle" font-size="11" fill="#57606a">hexapod_msgs</text>
+    <text x="595" y="92" text-anchor="middle" font-size="12">joypad/button</text>
+    <text x="595" y="110" text-anchor="middle" font-size="12">joypad/thumbstick</text>
+    <text x="595" y="128" text-anchor="middle" font-size="12">joypad/trigger</text>
+
+    <!-- not yet connected -->
+    <line x1="595" y1="138" x2="595" y2="180" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
+    <polygon points="595,180 591,172 599,172" fill="#cf222e"/>
+    <text x="612" y="166" font-size="11" fill="#cf222e">not connected yet</text>
+
+    <rect x="460" y="180" width="270" height="60" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="595" y="205" text-anchor="middle" font-weight="bold">servomotors_node</text>
+    <text x="595" y="225" text-anchor="middle" fill="#57606a">two PCA9685 boards over I2C</text>
+
+    <rect x="20" y="180" width="370" height="60" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="205" y="203" text-anchor="middle" font-size="12" fill="#9a6700">The servo node currently only homes the joints:</text>
+    <text x="205" y="223" text-anchor="middle" font-size="12" fill="#9a6700">it does not subscribe to the joypad topics.</text>
+  </g>
+</svg>

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 420" width="760" height="420" role="img"
+     aria-label="Wiring: a Raspberry Pi drives two PCA9685 boards over one I2C bus; the boards take servo power from a separate supply">
+  <rect x="0" y="0" width="760" height="420" fill="#ffffff"/>
+  <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
+
+    <text x="16" y="26" font-size="15" font-weight="bold">Wiring of the two servo boards</text>
+
+    <!-- Raspberry Pi -->
+    <rect x="30" y="60" width="150" height="90" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="105" y="92" text-anchor="middle" font-weight="bold">Raspberry Pi</text>
+    <text x="105" y="112" text-anchor="middle">/dev/i2c-1</text>
+    <text x="105" y="130" text-anchor="middle" fill="#57606a">SDA, SCL, GND</text>
+
+    <!-- I2C bus line -->
+    <line x1="180" y1="105" x2="300" y2="105" stroke="#0969da" stroke-width="2.5"/>
+    <text x="240" y="96" text-anchor="middle" fill="#0969da">I2C</text>
+    <line x1="300" y1="105" x2="300" y2="300" stroke="#0969da" stroke-width="2.5"/>
+    <line x1="300" y1="105" x2="380" y2="105" stroke="#0969da" stroke-width="2.5"/>
+    <line x1="300" y1="300" x2="380" y2="300" stroke="#0969da" stroke-width="2.5"/>
+
+    <!-- Board left -->
+    <rect x="380" y="60" width="180" height="90" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="470" y="86" text-anchor="middle" font-weight="bold">PCA9685 - 0x40</text>
+    <text x="470" y="106" text-anchor="middle">channels 0 to 8</text>
+    <text x="470" y="126" text-anchor="middle" fill="#57606a">names starting with L</text>
+
+    <!-- Board right -->
+    <rect x="380" y="255" width="180" height="90" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="470" y="281" text-anchor="middle" font-weight="bold">PCA9685 - 0x41</text>
+    <text x="470" y="301" text-anchor="middle">channels 0 to 8</text>
+    <text x="470" y="321" text-anchor="middle" fill="#57606a">A0 jumper soldered</text>
+
+    <!-- servos -->
+    <rect x="610" y="60" width="120" height="90" rx="6" fill="#f6f8fa" stroke="#8b949e"/>
+    <text x="670" y="98" text-anchor="middle">9 servos</text>
+    <text x="670" y="118" text-anchor="middle" fill="#57606a">left legs</text>
+    <line x1="560" y1="105" x2="610" y2="105" stroke="#57606a" stroke-width="2"/>
+
+    <rect x="610" y="255" width="120" height="90" rx="6" fill="#f6f8fa" stroke="#8b949e"/>
+    <text x="670" y="293" text-anchor="middle">9 servos</text>
+    <text x="670" y="313" text-anchor="middle" fill="#57606a">right legs</text>
+    <line x1="560" y1="300" x2="610" y2="300" stroke="#57606a" stroke-width="2"/>
+
+    <!-- power -->
+    <rect x="30" y="255" width="150" height="90" rx="6" fill="#fff8c5" stroke="#9a6700"/>
+    <text x="105" y="287" text-anchor="middle" font-weight="bold">5 V supply</text>
+    <text x="105" y="307" text-anchor="middle">servo rail only</text>
+    <text x="105" y="325" text-anchor="middle" fill="#9a6700">common ground</text>
+    <path d="M180,300 L260,300 L260,150 L380,150" fill="none" stroke="#9a6700" stroke-width="2.5"/>
+    <path d="M260,300 L380,345" fill="none" stroke="#9a6700" stroke-width="2.5"/>
+
+    <text x="30" y="380" fill="#9a6700" font-weight="bold">Do not power eighteen servos from the Pi.</text>
+    <text x="30" y="400" fill="#57606a">Their stall current browns out the board; feed V+ separately and tie the grounds together.</text>
+  </g>
+</svg>

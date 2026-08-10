@@ -9,11 +9,11 @@ extern "C" {
 #include <unistd.h>
 }
 
-#include <system_error>
 #include <iostream>
+#include <system_error>
 
 i2cPeripheral::i2cPeripheral(const std::string& t_device, const uint8_t t_address) {
-  printf( "i2cPeripheral::i2cPeripheral\n");
+  printf("i2cPeripheral::i2cPeripheral\n");
   OpenBus(t_device);
   ConnectToPeripheral(t_address);
 }

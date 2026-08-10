@@ -1,152 +1,278 @@
 /**
- * @file servocontoller.cc
+ * @file servocontroller.cc
  * @author Francesco Argentieri (francesco.argentieri89@gmail.com)
- * @brief Class hold the interface for Servo Controller board based on Adafruit PCA 9685.
- * @version 0.1.0
- * @date 2022-12-04
+ * @brief ROS 2 node driving the eighteen hexapod servos through two PCA9685 boards.
+ * @version 0.2.0
+ * @date 2026-08-09
  *
- * @copyright Copyright (c) 2022
+ * @copyright Copyright (c) 2021-2026 Francesco Argentieri
  *
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "servocontroller.h"
 
-#include <ros/console.h>
+#include <algorithm>
+#include <ament_index_cpp/get_package_share_directory.hpp>
+#include <cmath>
+#include <stdexcept>
+#include <thread>
 
+#include "PCA9685_register.h"
 #include "utility_function.h"
 
 namespace hexapod {
 
-constexpr auto kDefaultPWMFreq{50.0}; /**< Default frequency PWM */
-constexpr int kReservedMotors{32};    /**< Reserved space for motors */
+namespace {
 
-ServoController::ServoController() : m_servo_driver1("/dev/i2c-1", 0x40), m_servo_driver2("/dev/i2c-1", 0x41) {
-  m_motors.reserve(kReservedMotors);
-  // open some common LUAlibraries
-  lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::table, sol::lib::debug);
-  ROS_DEBUG_STREAM("Initialize ServoController, retrieve params from launch files");
-  if (ros::param::has("servomotors/pwm_frequency")) {
-    ros::param::get("servomotors/pwm_frequency", m_freq);
-    ROS_DEBUG_STREAM("Update default \"PWM frequency\": " << m_freq << " [Hz]");
-  } else {
-    m_freq = kDefaultPWMFreq;
-    ROS_WARN_STREAM("Set to default \"PWM frequency\": " << m_freq << " [Hz]");
-  }
-  m_servo_driver1.SetPWMFrequency(m_freq);
-  m_servo_driver2.SetPWMFrequency(m_freq);
+constexpr auto kDefaultPWMFreq{50.0};   /**< Refresh rate expected by hobby servos. */
+constexpr int kReservedMotors{32};      /**< Reserved space for motors. */
+constexpr int kDefaultMotorsPerSide{9}; /**< Three legs per side, three joints per leg. */
+constexpr int kDefaultSettleMs{50};     /**< Time given to a servo to reach its target. */
+constexpr int kTestStepDegree{5};       /**< Sweep granularity of the startup test. */
 
-  // initialize motors
+}  // namespace
+
+ServoController::ServoController() : rclcpp::Node("servomotors_node") {
+  motors_.reserve(kReservedMotors);
+  lua_.open_libraries(sol::lib::base, sol::lib::package, sol::lib::string, sol::lib::table, sol::lib::debug);
+
+  config_directory_ = ament_index_cpp::get_package_share_directory("hexapod_servomotor") + "/config";
+  RCLCPP_INFO_STREAM(get_logger(), "configuration directory: " << config_directory_);
+
+  DeclareParameters();
+  OpenDrivers();
   RegisterMotors();
   RestoreDefaultPosition();
 
-  ROS_DEBUG_STREAM("Initialize callbacks and subscribers");
-  // m_node_handler.subscribe<>("", , &ServoController:: Callback, this);
-  ROS_DEBUG_STREAM("Initialization completed");
+  RCLCPP_INFO(get_logger(), "servomotors node ready with %zu motors", motors_.size());
+  if (startup_test_) {
+    RCLCPP_WARN(get_logger(),
+                "perform_startup_test is enabled: every joint will sweep its full travel, "
+                "make sure the robot is supported off the ground");
+  }
 }
 
-ServoController::~ServoController() = default;
+ServoController::~ServoController() {
+  // The two drivers switch their outputs off in their own destructors; say so
+  // here as well, because this is the message an operator looks for.
+  RCLCPP_INFO(get_logger(), "shutting down, the servos will stop being driven");
+}
+
+void ServoController::DeclareParameters() {
+  i2c_bus_ = declare_parameter<std::string>("i2c_bus", "/dev/i2c-1");
+
+  const auto left = declare_parameter<int>("left_driver_address", 0x40);
+  const auto right = declare_parameter<int>("right_driver_address", 0x41);
+  if (left == right) {
+    throw std::invalid_argument("left_driver_address and right_driver_address are both " + std::to_string(left) +
+                                ": the two boards must be strapped to different addresses");
+  }
+  left_address_ = static_cast<std::uint8_t>(left);
+  right_address_ = static_cast<std::uint8_t>(right);
+
+  frequency_ = declare_parameter<double>("pwm_frequency", kDefaultPWMFreq);
+  min_pulse_us_ = declare_parameter<double>("min_pulse_width_us", kDefaultMinPulseWidthUs);
+  max_pulse_us_ = declare_parameter<double>("max_pulse_width_us", kDefaultMaxPulseWidthUs);
+  if (min_pulse_us_ >= max_pulse_us_) {
+    throw std::invalid_argument("min_pulse_width_us (" + std::to_string(min_pulse_us_) +
+                                ") must be smaller than max_pulse_width_us (" + std::to_string(max_pulse_us_) + ")");
+  }
+
+  // A pulse cannot outlast the period it lives in.
+  const auto period_us = 1e6 / frequency_;
+  if (max_pulse_us_ >= period_us) {
+    throw std::invalid_argument("max_pulse_width_us (" + std::to_string(max_pulse_us_) + ") does not fit in the " +
+                                std::to_string(period_us) + " us period of a " + std::to_string(frequency_) +
+                                " Hz signal");
+  }
+
+  motors_per_side_ = declare_parameter<int>("motors_per_side", kDefaultMotorsPerSide);
+  if (motors_per_side_ <= 0 || motors_per_side_ > adafruit::pca9685::kChannelCount) {
+    throw std::invalid_argument("motors_per_side must be between 1 and " +
+                                std::to_string(adafruit::pca9685::kChannelCount));
+  }
+
+  const auto settle_ms = declare_parameter<int>("settle_time_ms", kDefaultSettleMs);
+  if (settle_ms < 0) {
+    throw std::invalid_argument("settle_time_ms cannot be negative");
+  }
+  settle_time_ = std::chrono::milliseconds{settle_ms};
+
+  startup_test_ = declare_parameter<bool>("perform_startup_test", false);
+  motors_script_ = declare_parameter<std::string>("motors_script", "motors.lua");
+  homing_script_ = declare_parameter<std::string>("homing_script", "homing.lua");
+
+  RCLCPP_INFO(get_logger(),
+              "configuration: bus %s, boards 0x%02X and 0x%02X, %.1f Hz, pulse %.0f-%.0f us, "
+              "settle %d ms",
+              i2c_bus_.c_str(), static_cast<unsigned>(left_address_), static_cast<unsigned>(right_address_), frequency_,
+              min_pulse_us_, max_pulse_us_,
+              // declare_parameter<int> hands back an int64_t.
+              static_cast<int>(settle_ms));
+}
+
+void ServoController::OpenDrivers() {
+  servo_driver_left_.Initialize(i2c_bus_, left_address_);
+  servo_driver_right_.Initialize(i2c_bus_, right_address_);
+
+  servo_driver_left_.SetPWMFrequency(frequency_);
+  servo_driver_right_.SetPWMFrequency(frequency_);
+
+  const auto actual = servo_driver_left_.GetActualFrequency();
+  if (std::abs(actual - frequency_) > 0.5) {
+    RCLCPP_WARN(get_logger(), "pulse widths are computed for %.2f Hz, not the requested %.2f Hz", actual, frequency_);
+  }
+}
+
+bool ServoController::StartupTestRequested() const noexcept { return startup_test_; }
+
+sol::protected_function ServoController::LoadScript(const std::string& t_filename, const std::string& t_entry_point) {
+  const auto path = config_directory_ + "/" + t_filename;
+
+  auto script = lua_.load_file(path);
+  if (!script.valid()) {
+    const sol::error err = script;
+    throw std::runtime_error("cannot load Lua script \"" + path + "\": " + err.what());
+  }
+
+  const sol::protected_function_result executed = script();
+  if (!executed.valid()) {
+    const sol::error err = executed;
+    throw std::runtime_error("cannot execute Lua script \"" + path + "\": " + err.what());
+  }
+
+  sol::protected_function entry_point = lua_[t_entry_point];
+  if (!entry_point.valid()) {
+    throw std::runtime_error("Lua script \"" + path + "\" does not define \"" + t_entry_point + "\"");
+  }
+
+  RCLCPP_DEBUG_STREAM(get_logger(), "loaded " << path << ", entry point " << t_entry_point);
+  return entry_point;
+}
 
 void ServoController::PerformTest() {
-  ROS_INFO_STREAM("=== perform test ===");
-  for (auto& motor : m_motors) {
-    for (auto i = 0; i < 180; i++) {
-      motor.SetAngle(i);
+  RCLCPP_WARN(get_logger(), "starting the joint sweep over %zu motors", motors_.size());
+
+  for (auto& motor : motors_) {
+    RCLCPP_INFO_STREAM(get_logger(), "sweeping " << motor.GetNameMotor());
+    for (auto angle = static_cast<int>(kMinAngleDegree); angle <= static_cast<int>(kMaxAngleDegree);
+         angle += kTestStepDegree) {
+      motor.SetAngle(angle);
       WriteOnMotor(motor);
     }
     RestoreDefaultPosition();
   }
-  ROS_INFO_STREAM("=== end test ===");
+
+  RCLCPP_INFO(get_logger(), "joint sweep finished");
   RestoreDefaultPosition();
 }
 
 void ServoController::RestoreDefaultPosition() {
-  auto script = lua.load_file("/home/pi/hexapod_ws/src/hexapod_servomotor/config/homing.lua");
-  if (!script.valid()) {
-    sol::error err = script;
-    std::cerr << "failed to load string-based script into the program " << err.what() << std::endl;
-  }
-  script();
-  auto get_homing_angle = lua["homing"];
-  for (auto& motor : m_motors) {
-    auto angle = static_cast<int>(get_homing_angle(motor.GetNameMotor()));
-    motor.SetAngle(angle);
+  auto get_homing_angle = LoadScript(homing_script_, "homing");
+
+  for (auto& motor : motors_) {
+    const sol::protected_function_result result = get_homing_angle(motor.GetNameMotor());
+    if (!result.valid()) {
+      const sol::error err = result;
+      throw std::runtime_error("homing() failed for motor \"" + motor.GetNameMotor() + "\": " + err.what());
+    }
+
+    const sol::optional<double> angle = result;
+    if (!angle.has_value()) {
+      throw std::runtime_error("\"" + homing_script_ + "\" defines no angle for motor \"" + motor.GetNameMotor() +
+                               "\"");
+    }
+
+    motor.SetAngle(*angle);
     WriteOnMotor(motor);
   }
+
+  RCLCPP_INFO(get_logger(), "all %zu motors moved to their rest position", motors_.size());
 }
 
 void ServoController::RegisterMotors() {
-  auto script = lua.load_file("/home/pi/hexapod_ws/src/hexapod_servomotor/config/motors.lua");
-  if (!script.valid()) {
-    sol::error err = script;
-    std::cerr << "failed to load string-based script into the program " << err.what() << std::endl;
-  }
-  script();
-  auto generator = lua["generate_motors_configuration"];
+  auto generator = LoadScript(motors_script_, "generate_motors_configuration");
+
   for (const auto& side : {"L", "R"}) {
-    sol::protected_function_result result = generator(9, side);
+    const sol::protected_function_result result = generator(motors_per_side_, side);
     if (!result.valid()) {
-      sol::error err = result;
-      std::cerr << "failed to load string-based script into the program " << err.what() << std::endl;
+      const sol::error err = result;
+      throw std::runtime_error(std::string("generate_motors_configuration(\"") + side + "\") failed: " + err.what());
     }
   }
 
-  // populate motors
-  sol::table motors_table = lua["Motors"];
-  auto counter = 0;
-  if (motors_table.size() != 0) {
-    for (const auto& key_value_pair : motors_table) {
-      sol::object key = key_value_pair.first;
-      sol::object value = key_value_pair.second;
-      sol::type motor_table = value.get_type();
-      std::string motor_name{};
-      int pin{-1};
-      switch (motor_table) {
-        case sol::type::table: {
-          for (auto const& table : value.as<sol::table>()) {
-            switch (table.second.get_type()) {
-              case sol::type::string: {
-                motor_name = table.second.as<std::string>();
-              } break;
-              case sol::type::number: {
-                pin = table.second.as<int>();
-              } break;
-              default: {
-                std::cout << "hit the default case!" << std::endl;
-              }
-            }
-            ++counter;
-          }
-        } break;
-        case sol::type::string:
-          [[fallthrough]];
-        case sol::type::number:
-          [[fallthrough]];
-        default: {
-          std::cout << "hit the default case!" << std::endl;
-        }
-      }
+  const sol::optional<sol::table> motors_table = lua_["Motors"];
+  if (!motors_table.has_value() || motors_table->size() == 0) {
+    throw std::runtime_error("\"" + motors_script_ +
+                             "\" produced no motor: the global \"Motors\" table is missing "
+                             "or empty");
+  }
 
-      if (counter % 2 == 0) {
-        m_motors.push_back(Motor(motor_name, pin));
-        counter = 0;
-      }
+  for (const auto& entry : *motors_table) {
+    if (entry.second.get_type() != sol::type::table) {
+      throw std::runtime_error("\"" + motors_script_ + "\": every entry of \"Motors\" must be a {name, pin} table");
     }
+
+    auto motor_entry = entry.second.as<sol::table>();
+    const sol::optional<std::string> name = motor_entry[1];
+    const sol::optional<int> pin = motor_entry[2];
+    if (!name.has_value() || !pin.has_value()) {
+      throw std::runtime_error("\"" + motors_script_ + "\": an entry of \"Motors\" is not a valid {name, pin} pair");
+    }
+
+    // The pin becomes a PCA9685 channel, so it has to exist on the board.
+    if (*pin < 0 || *pin >= adafruit::pca9685::kChannelCount) {
+      throw std::runtime_error("\"" + motors_script_ + "\": motor \"" + *name + "\" uses pin " + std::to_string(*pin) +
+                               ", outside 0 to " + std::to_string(adafruit::pca9685::kChannelCount - 1));
+    }
+
+    motors_.emplace_back(*name, *pin);
+    RCLCPP_DEBUG_STREAM(get_logger(), "registered " << motors_.back());
   }
+
+  RCLCPP_INFO(get_logger(), "registered %zu motors from \"%s\"", motors_.size(), motors_script_.c_str());
 }
 
-void ServoController::WriteOnMotor(const Motor& motor) {
-  if (motor.GetNameMotor().starts_with("L")) {
-    m_servo_driver1.SetSinglePWM(motor.GetPinMotor(), 0, PulseWidth(motor.GetAngle()));
-  } else {
-    m_servo_driver2.SetSinglePWM(motor.GetPinMotor(), 0, PulseWidth(motor.GetAngle()));
-  }
-  ros::Duration(0.05).sleep();
+void ServoController::WriteOnMotor(const Motor& t_motor) {
+  auto& driver = t_motor.GetNameMotor().starts_with("L") ? servo_driver_left_ : servo_driver_right_;
+
+  driver.SetSinglePWM(t_motor.GetPinMotor(), 0, PulseWidth(t_motor.GetAngle()));
+  std::this_thread::sleep_for(settle_time_);
 }
 
-uint16_t ServoController::PulseWidth(int angle) const {
-  auto pulse_wide = map(angle, 0, 180, MIN_PULSE_WIDTH, MAX_PULSE_WIDTH);
-  auto analog_value = static_cast<int>((static_cast<double>(pulse_wide) / 1000000 * m_freq * 4096));
-  return static_cast<uint16_t>(analog_value);
+std::uint16_t ServoController::PulseWidth(const double t_angle) const {
+  const auto angle = std::clamp(t_angle, kMinAngleDegree, kMaxAngleDegree);
+  if (std::abs(angle - t_angle) > 0.0) {
+    RCLCPP_WARN(get_logger(), "angle %.1f degrees is outside [%.0f, %.0f], clamped to %.1f", t_angle, kMinAngleDegree,
+                kMaxAngleDegree, angle);
+  }
+
+  const auto pulse_us = map(angle, kMinAngleDegree, kMaxAngleDegree, min_pulse_us_, max_pulse_us_);
+
+  // Ticks of the 12-bit counter, using the frequency the board really produces.
+  const auto frequency = servo_driver_left_.GetActualFrequency();
+  const auto ticks = std::lround(pulse_us * 1e-6 * frequency * (adafruit::pca9685::kCounterMax + 1));
+
+  return static_cast<std::uint16_t>(std::clamp<long>(ticks, 0, static_cast<long>(adafruit::pca9685::kCounterMax)));
 }
 
 }  // namespace hexapod

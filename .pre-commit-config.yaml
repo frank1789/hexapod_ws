@@ -1,0 +1,116 @@
+# Run everything with:  pre-commit run --all-files
+#
+# `pre-commit install` wires BOTH the pre-commit and the commit-msg hooks,
+# thanks to default_install_hook_types, so message linting is automatic too.
+#
+# Every hook runs in an environment pre-commit builds itself, with two
+# deliberate exceptions (the `local` repo below) that degrade to a skip when
+# the tool is missing, so committing works on a bare host as well as inside
+# the dev container.
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+# Generated/binary assets: reformatting them is pure noise.
+exclude: |
+  (?x)^(
+    src/hexapod_description/meshes/.*|
+    src/reference_img/.*
+  )$
+
+repos:
+  # --- File hygiene ---------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: [--maxkb=4096]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: destroyed-symlinks
+      - id: check-toml
+      - id: check-xml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: trailing-whitespace
+
+  # --- C++ ------------------------------------------------------------------
+  # clang-format is the ONLY C++ formatter: it owns .clang-format. ament_uncrustify
+  # used to run here as well, with its own incompatible rules, so the two rewrote
+  # every file in turn on each commit.
+  #
+  # Pinned to the major version of LLVM_VERSION in devcontainer.json: the hook
+  # ships its own binary, and a different major would reformat differently from
+  # the clang-format a developer runs inside the container. `pre-commit
+  # autoupdate` will try to move it, keep the two in step by hand.
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v21.1.8
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+        args: ["-i", "--style=file"]
+
+  # --- CMake ----------------------------------------------------------------
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+
+  # --- Python (launch files) ------------------------------------------------
+  - repo: https://github.com/psf/black
+    rev: 26.5.1
+    hooks:
+      - id: black
+        args: [--line-length=100]
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        # E203 contradicts black on slice spacing, and black runs first here.
+        args: [--max-line-length=100, --extend-ignore=E203]
+
+  # --- Shell ----------------------------------------------------------------
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  # --- Spelling (British English, see cspell.config.yaml) -------------------
+  - repo: https://github.com/streetsidesoftware/cspell-cli
+    rev: v10.0.1
+    hooks:
+      - id: cspell
+
+  # --- Commit messages ------------------------------------------------------
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.17.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # --- Local checks that skip cleanly when the tool is absent ---------------
+  - repo: local
+    hooks:
+      - id: lua-syntax
+        name: lua syntax check
+        entry: scripts/check-lua-syntax.sh
+        language: script
+        types: [lua]
+
+      - id: cpp-syntax
+        name: c++ syntax check
+        entry: scripts/check-cpp-syntax.sh
+        language: script
+        types_or: [c++, c]
+        pass_filenames: false
+
+      - id: commit-message-layout
+        name: commit message 52/72 layout
+        entry: scripts/check-commit-message.sh
+        language: script
+        stages: [commit-msg]

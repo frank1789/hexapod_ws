@@ -1,0 +1,9 @@
+---
+# In a test the literal value is the specification: "SetAngle(200) clamps to
+# 179" says more than two named constants would. Everything else in the parent
+# configuration still applies.
+InheritParentConfig: true
+Checks: >
+        -cppcoreguidelines-avoid-magic-numbers,
+        -readability-magic-numbers,
+...

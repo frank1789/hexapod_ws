@@ -2,18 +2,24 @@
 
 #include <cmath>
 #include <iomanip>
+#include <utility>
 
-ThumbStick::ThumbStick(const std::string& name)
-    : raw_x_axis_(0.0), raw_y_axis_(0.0), x_axis_normalized_(0.0), magnitude_(0.0), angle_(0.0), tb_name_(name) {}
+namespace {
 
-ThumbStick::ThumbStick(const std::string& name, double x_axis, double y_axis) {
-  tb_name_ = name;
-  raw_x_axis_ = x_axis;
-  raw_y_axis_ = y_axis;
-  x_axis_normalized_ = normalize(x_axis);
-  magnitude_ = computeMagnitude(x_axis_normalized_, y_axis);
-  angle_ = computeAngle(x_axis_normalized_, y_axis);
-}
+/** @brief Decimal places used when streaming a value. */
+constexpr int kPrecision{5};
+
+}  // namespace
+
+ThumbStick::ThumbStick(std::string name) : tb_name_(std::move(name)) {}
+
+ThumbStick::ThumbStick(std::string name, double x_axis, double y_axis)
+    : tb_name_(std::move(name)),
+      raw_x_axis_(x_axis),
+      raw_y_axis_(y_axis),
+      x_axis_normalized_(normalize(x_axis)),
+      magnitude_(computeMagnitude(normalize(x_axis), y_axis)),
+      angle_(computeAngle(normalize(x_axis), y_axis)) {}
 
 void ThumbStick::setXaxis(double x_axis) {
   raw_x_axis_ = x_axis;
@@ -69,7 +75,7 @@ double ThumbStick::computeMagnitude(double x_axis, double y_axis) { return std::
 
 double ThumbStick::computeAngle(double x_axis, double y_axis) { return std::atan2(y_axis, x_axis); }
 
-std::ostream& operator<<(std::ostream& os, const ThumbStick& tb) {
-  os.precision(5);
-  return os << tb.tb_name_ << " [" << std::fixed << tb.x_axis_normalized_ << ", " << tb.raw_y_axis_ << "]";
+std::ostream& operator<<(std::ostream& stream, const ThumbStick& stick) {
+  stream.precision(kPrecision);
+  return stream << stick.tb_name_ << " [" << std::fixed << stick.x_axis_normalized_ << ", " << stick.raw_y_axis_ << "]";
 }
