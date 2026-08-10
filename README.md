@@ -1,13 +1,18 @@
 # hexapod_ws
 
-ROS 2 workspace for an eighteen degree-of-freedom hexapod: a PS3 joypad drives
-eighteen servos through two Adafruit PCA9685 boards on the I²C bus of a
-Raspberry Pi.
+ROS 2 workspace for an eighteen degree-of-freedom hexapod. Poses come from an
+animation package over ZeroMQ or from a PS3 joypad, and drive eighteen servos
+through two Adafruit PCA9685 boards on the I²C bus of a Raspberry Pi.
 
-![From the joypad to the joints](doc/images/data-flow.svg)
+![How the nodes interact](doc/images/data-flow.svg)
+
+The joypad has the last word: touching it freezes the joints wherever the last
+pose left them, and the streamed poses resume once it has been quiet. See
+[the ZeroMQ bridge](doc/zeromq-bridge.md).
 
 - [Requirements](#requirements)
 - [Build](#build)
+- [Container](#container)
 - [Test](#test)
 - [Install](#install)
 - [Run](#run)
@@ -21,8 +26,10 @@ Raspberry Pi.
 |---|---|
 | ROS 2 | Jazzy (any distribution works; nothing hard-codes one) |
 | Compiler | C++20, strict ISO, no GNU extensions |
-| System libraries | `liblua5.3-dev`, `libi2c-dev` |
-| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2), when not already installed |
+| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json` — see [`vcpkg.json`](vcpkg.json) |
+| System libraries | `liblua5.3-dev`, `libi2c-dev`, and `libzmq3-dev`, `libfmt-dev`, `nlohmann-json3-dev` when building without vcpkg |
+| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2) and [cppzmq](https://github.com/zeromq/cppzmq), when not already installed |
+| Workstation | Python with `pyzmq`, inside Maya or Blender |
 | Hardware | Raspberry Pi with I²C enabled, two PCA9685 boards, separate 5 V servo supply |
 
 The supported environment is the dev container in
@@ -75,12 +82,36 @@ colcon build --symlink-install --packages-select hexapod_servomotor
 read from the install tree, so with symlinks an edit takes effect without
 rebuilding.
 
+To build against vcpkg rather than the system packages, point CMake at its
+toolchain — this is what the container image does:
+
+```sh
+colcon build --cmake-args \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+```
+
 Install the git hooks once per clone (the dev container does it for you):
 
 ```sh
 pre-commit install
 pre-commit run --all-files
 ```
+
+## Container
+
+The image builds the workspace and ships only what is needed to run it, which
+is the intended way to put the robot on a Pi without installing a toolchain
+there:
+
+```sh
+docker compose -f docker/compose.yaml up --build          # the robot
+docker compose -f docker/compose.yaml --profile dry up    # no I2C hardware
+```
+
+Configuration is environment variables in the compose file, turned into ROS
+parameters by the launch file, so changing the ZeroMQ endpoint or the joypad
+override timeout is an edit and a restart rather than a rebuild. Details in
+[running in a container](doc/docker.md).
 
 ## Test
 
@@ -145,10 +176,25 @@ If only `40` appears, the second board still has its stock address: solder its
 
 ## Run
 
-Everything at once — joystick driver, remapper and servos:
+Everything at once — joystick driver, remapper, ZeroMQ bridge and servos:
+
+```sh
+ros2 launch hexapod_bridge hexapod.launch.py
+```
+
+Each part can be left out with `with_servos:=false`, `with_joypad:=false` or
+`with_bridge:=false`. The older joypad-only launch still exists:
 
 ```sh
 ros2 launch hexapod_joypad hexapod_joypad.launch.py
+```
+
+Sending poses from a workstation, with the sender that runs inside Maya or
+Blender:
+
+```sh
+python3 tools/hexapod_pose_sender.py --endpoint tcp://raspberrypi.local:5556
+ros2 topic echo /joint_command          # on the robot, to watch them arrive
 ```
 
 Without the hardware, on a development machine:
