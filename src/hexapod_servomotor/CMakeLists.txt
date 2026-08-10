@@ -36,6 +36,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(hexapod_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(Lua 5.3 REQUIRED)
 
 # sol2 is header-only: use the system package when available, otherwise fetch
@@ -72,8 +73,9 @@ target_include_directories(${PROJECT_NAME}_node PRIVATE include
                                                         ${LUA_INCLUDE_DIR})
 
 target_link_libraries(
-  ${PROJECT_NAME}_node PRIVATE servomotor_core ament_index_cpp::ament_index_cpp
-                               ${hexapod_msgs_TARGETS} ${LUA_LIBRARIES} sol2)
+  ${PROJECT_NAME}_node
+  PRIVATE servomotor_core ament_index_cpp::ament_index_cpp
+          ${hexapod_msgs_TARGETS} ${sensor_msgs_TARGETS} ${LUA_LIBRARIES} sol2)
 
 install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 

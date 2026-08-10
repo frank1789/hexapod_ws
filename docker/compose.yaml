@@ -1,0 +1,100 @@
+# Running the hexapod on a Raspberry Pi 4B or 5.
+#
+#   docker compose -f docker/compose.yaml up --build          # the robot
+#   docker compose -f docker/compose.yaml --profile dry up     # no hardware
+#
+# Configuration is here rather than baked into the image: every value below is
+# an environment variable the launch file turns into a ROS parameter override,
+# so changing the endpoint or the override timeout is an edit and a restart, not
+# a rebuild. Defaults live in src/hexapod_bridge/config/bridge.yaml.
+
+services:
+  hexapod:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    image: hexapod:${HEXAPOD_TAG:-latest}
+    container_name: hexapod
+
+    # The joints must not be left mid-pose because a process died.
+    restart: unless-stopped
+
+    # Both PCA9685 boards and the joystick are on the host. Listing the devices
+    # one by one, rather than running privileged, keeps the container's reach
+    # limited to what the robot actually needs.
+    devices:
+      - /dev/i2c-1:/dev/i2c-1
+    device_cgroup_rules:
+      # Character devices 13:* are /dev/input/*, matched as a class because the
+      # joystick's number changes when it is re-paired.
+      - "c 13:* rmw"
+    volumes:
+      - /dev/input:/dev/input:ro
+
+    # The bridge binds this port for the animation package to connect to.
+    ports:
+      - "${HEXAPOD_BRIDGE_PORT:-5556}:5556"
+
+    environment:
+      # --- ZeroMQ bridge ---------------------------------------------------
+      # 0.0.0.0 so the socket answers on every interface of the Pi. The port
+      # here is the one inside the container; change the mapping above to move
+      # the one outside it.
+      HEXAPOD_BRIDGE_ENDPOINT: "tcp://0.0.0.0:5556"
+      HEXAPOD_BRIDGE_BIND: "true"
+      HEXAPOD_BRIDGE_OUTPUT_TOPIC: "joint_command"
+      HEXAPOD_BRIDGE_POLL_PERIOD_MS: "5"
+
+      # How long after letting go of the joypad the streamed poses take over
+      # again. Holding the joypad freezes the joints.
+      HEXAPOD_BRIDGE_OVERRIDE_TIMEOUT_MS: "1500"
+      HEXAPOD_BRIDGE_THUMBSTICK_DEADZONE: "0.25"
+
+      # --- ROS -------------------------------------------------------------
+      # DDS stays inside the container: the only traffic that crosses the
+      # network is the ZeroMQ link, which is unicast and behaves over WiFi.
+      # ROS_LOCALHOST_ONLY did this before Jazzy and now warns on every start.
+      ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-0}"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+
+    # Shared memory for the DDS transport; the default 64 MB is tight.
+    shm_size: "256m"
+
+    healthcheck:
+      # The bridge is alive if its topic is being advertised. This checks the
+      # ROS graph, not just that the process has not exited.
+      test: ["CMD-SHELL", "ros2 topic list | grep -q joint_command"]
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+
+  # Everything except the I2C hardware, for a workstation or a Pi with nothing
+  # wired to it yet. Same image, different launch arguments.
+  hexapod-dry:
+    profiles: ["dry"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    image: hexapod:${HEXAPOD_TAG:-latest}
+    container_name: hexapod-dry
+    restart: "no"
+    ports:
+      - "${HEXAPOD_BRIDGE_PORT:-5556}:5556"
+    environment:
+      HEXAPOD_BRIDGE_ENDPOINT: "tcp://0.0.0.0:5556"
+      HEXAPOD_BRIDGE_BIND: "true"
+      ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
+    shm_size: "256m"
+    command:
+      - ros2
+      - launch
+      - hexapod_bridge
+      - hexapod.launch.py
+      - "with_servos:=false"
+      - "with_joypad:=false"

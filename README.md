@@ -189,6 +189,7 @@ unpowered instead of holding their last command.
 |---|---|
 | `hexapod_msgs` | `JoypadButton`, `JoypadThumbstick`, `JoypadTrigger` |
 | `hexapod_joypad` | Remaps `sensor_msgs/msg/Joy` into those messages |
+| `hexapod_bridge` | Receives poses over ZeroMQ, arbitrates with the joypad |
 | `hexapod_servomotor` | Drives the servos through two PCA9685 boards |
 | `hexapod_description` | URDF model and meshes |
 
@@ -212,6 +213,9 @@ controller, follow [this guide](https://pimylifeup.com/raspberry-pi-playstation-
 | Document | Contents |
 |---|---|
 | [Setting up a Raspberry Pi](doc/raspberry-pi.md) | The install script, the supported image, I²C, build memory, troubleshooting |
+| [Running in a container](doc/docker.md) | The multistage image, compose, vcpkg, what the container is given |
+| [The ZeroMQ bridge](doc/zeromq-bridge.md) | The animation link, the joypad override, the message format, parameters |
+| [Maya and Blender transport](doc/maya-blender-bridge.md) | Why ZeroMQ rather than gRPC, and where the bridge belongs |
 | [The PCA9685 servo board](doc/pca9685.md) | PWM generation, registers, timing, wiring, driver validation |
 | [Configuring the robot](doc/configuration.md) | Node parameters, the Lua scripts, tuning, reading the logs |
 | [Architecture](doc/architecture.md) | Packages, topics, failure behaviour |
