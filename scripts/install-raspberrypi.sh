@@ -463,6 +463,8 @@ install_ros_packages() {
     "ros-${ROS_DISTRO_WANTED}-joy"
     "ros-${ROS_DISTRO_WANTED}-robot-state-publisher"
     "ros-${ROS_DISTRO_WANTED}-xacro"
+    "ros-${ROS_DISTRO_WANTED}-realsense2-camera"
+    "ros-${ROS_DISTRO_WANTED}-realsense2-description"
     ros-dev-tools
   )
 
@@ -587,7 +589,7 @@ enable_i2c() {
 
 add_user_to_groups() {
   local group
-  for group in i2c input; do
+  for group in i2c input video; do
     if ! getent group "${group}" >/dev/null; then
       info "the ${group} group does not exist yet, creating it"
       as_root groupadd -f "${group}"

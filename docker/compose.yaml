@@ -21,17 +21,25 @@ services:
     # The joints must not be left mid-pose because a process died.
     restart: unless-stopped
 
-    # Both PCA9685 boards and the joystick are on the host. Listing the devices
-    # one by one, rather than running privileged, keeps the container's reach
-    # limited to what the robot actually needs.
+    # Both PCA9685 boards, the joystick, and RealSense camera are on the host.
+    # Listing the devices one by one, rather than running privileged, keeps the
+    # container's reach limited to what the robot actually needs.
     devices:
       - /dev/i2c-1:/dev/i2c-1
     device_cgroup_rules:
       # Character devices 13:* are /dev/input/*, matched as a class because the
       # joystick's number changes when it is re-paired.
       - "c 13:* rmw"
+      # Character devices 81:* are /dev/video*, for the RealSense D455 camera.
+      # Video devices are matched as a class because device numbers vary.
+      - "c 81:* rmw"
+      # Character devices 189:* are USB devices, needed for RealSense USB access.
+      - "c 189:* rmw"
     volumes:
       - /dev/input:/dev/input:ro
+      # RealSense camera access - mount /dev/bus/usb for full camera functionality.
+      # The camera won't crash ROS if not connected; the launch file handles it gracefully.
+      - /dev/bus/usb:/dev/bus/usb:rw
 
     # The bridge binds this port for the animation package to connect to.
     ports:

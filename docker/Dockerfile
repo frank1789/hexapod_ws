@@ -114,14 +114,16 @@ RUN apt-get update \
         liblua5.3-0 \
         ros-${ROS_DISTRO}-joy \
         ros-${ROS_DISTRO}-robot-state-publisher \
+        ros-${ROS_DISTRO}-realsense2-camera \
+        ros-${ROS_DISTRO}-realsense2-description \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /ws/install /opt/hexapod
 COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-# The container runs as a normal user in the i2c and input groups. Root would
-# work, but a process that can reach every device on the bus is not what should
-# be listening on a network port.
+# The container runs as a normal user in the i2c, input, and video groups. Root
+# would work, but a process that can reach every device on the bus is not what
+# should be listening on a network port.
 ARG USERNAME=hexapod
 ARG USER_UID=1000
 ARG USER_GID=1000
@@ -132,7 +134,8 @@ RUN if getent passwd ${USER_UID} >/dev/null; then \
     && useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} \
     && groupadd -f i2c \
     && groupadd -f input \
-    && usermod -aG i2c,input ${USERNAME}
+    && groupadd -f video \
+    && usermod -aG i2c,input,video ${USERNAME}
 
 USER ${USERNAME}
 WORKDIR /opt/hexapod
