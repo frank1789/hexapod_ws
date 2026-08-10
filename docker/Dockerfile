@@ -19,7 +19,7 @@ ARG ROS_DISTRO=jazzy
 FROM ros:${ROS_DISTRO}-ros-base AS builder
 
 ARG ROS_DISTRO
-ARG VCPKG_REF=master
+ARG VCPKG_REF=2026.07.29
 
 # vcpkg owns fmt, ZeroMQ, cppzmq, Eigen and nlohmann-json — see vcpkg.json at
 # the root of the workspace. It builds them from source, which on arm64 is the
@@ -36,11 +36,19 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # curl, zip, unzip and tar are vcpkg's own requirements; the rest is what the
 # workspace needs to compile. liblua5.3-dev carries lua.h, which
 # find_package(Lua 5.3 REQUIRED) needs and the interpreter package does not.
+# cmake is installed from Kitware's APT repository to get the latest version.
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+    && curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
-        curl \
         git \
         libi2c-dev \
         liblua5.3-dev \
