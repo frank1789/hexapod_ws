@@ -6,9 +6,15 @@ This is the launch file the container runs. The chain it starts is:
                                   ├──▶ hexapod_bridge ──▶ hexapod_servomotor
     Maya / Blender ──ZeroMQ───────┘        (joypad freezes the stream)
 
-Each part can be left out: `with_servos:=false` runs everything but the I2C
-hardware, `with_joypad:=false` drops the joystick when no controller is paired,
-and `with_bridge:=false` leaves the animation link out entirely.
+Every part can be left out, because every part depends on hardware that may not
+be attached: `with_servos:=false` drops the I2C boards, `with_joypad:=false` the
+joystick, `with_camera:=false` the depth camera, and `with_bridge:=false` the
+animation link. Nothing here fails because a device is missing — a node that
+needs one either is not started or exits and is respawned.
+
+The camera defaults to off. It is the only part whose absence is the normal
+case rather than the exception, and starting it costs USB bandwidth and CPU
+that the rest of the stack would rather have.
 
 The bridge is included from its own launch file rather than declared again
 here, so the environment overrides docker compose relies on are defined in one
@@ -22,9 +28,10 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
+from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
@@ -33,6 +40,14 @@ def generate_launch_description():
     with_servos = LaunchConfiguration("with_servos")
     with_joypad = LaunchConfiguration("with_joypad")
     with_bridge = LaunchConfiguration("with_bridge")
+    with_camera = LaunchConfiguration("with_camera")
+
+    # Resolved when the include runs rather than now, unlike the two paths
+    # below: with with_camera:=false the condition is false, the substitution
+    # is never evaluated, and hexapod_perception need not be installed at all.
+    camera_launch = PathJoinSubstitution(
+        [FindPackageShare("hexapod_perception"), "launch", "realsense_d455.launch.py"]
+    )
 
     bridge_launch = os.path.join(
         get_package_share_directory("hexapod_bridge"),
@@ -71,6 +86,11 @@ def generate_launch_description():
                 "with_bridge",
                 default_value="true",
                 description="start the ZeroMQ bridge that receives animation poses",
+            ),
+            DeclareLaunchArgument(
+                "with_camera",
+                default_value="false",
+                description="start the RealSense D455 (needs the camera on USB 3)",
             ),
             Node(
                 package="joy",
@@ -112,6 +132,10 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 condition=IfCondition(with_servos),
                 parameters=[servo_parameters],
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(camera_launch),
+                condition=IfCondition(with_camera),
             ),
         ]
     )

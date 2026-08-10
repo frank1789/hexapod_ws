@@ -51,14 +51,30 @@ parallelism has to be capped, which
 
 | Given | Why |
 |---|---|
-| `/dev/i2c-1` | The two PCA9685 boards |
-| `/dev/input` (read-only) + cgroup rule `c 13:*` | The joystick, whose device number changes when it is re-paired |
+| `/dev` bind-mounted | Every device node, including ones plugged in after the container started |
+| cgroup rule `c 89:*` | `/dev/i2c-*`, the two PCA9685 boards |
+| cgroup rule `c 13:*` | `/dev/input/*`, the joystick, whose number changes when it is re-paired |
+| cgroup rule `c 81:*` | `/dev/video*`, the RealSense D455 |
+| cgroup rule `c 189:*` | `/dev/bus/usb/*`, the camera's control channel |
 | Port 5556 | Where the bridge binds for the animation package |
 | `shm_size: 256m` | DDS shared-memory transport; the 64 MB default is tight |
 
-The devices are listed one by one rather than running the container privileged,
-so its reach stops at what the robot actually needs. The process inside runs as
-an unprivileged user in the `i2c` and `input` groups.
+`devices:` would have been the obvious way to pass the hardware, and it is the
+wrong one here: it is checked before the container is created, so a single
+unplugged camera stops the robot from starting at all.
+
+```sh
+$ docker run --device /dev/video99 hexapod:latest true
+error gathering device information while adding custom device
+"/dev/video99": no such file or directory
+```
+
+Bind-mounting `/dev` removes that precondition and, as a bonus, propagates
+hot-plugged devices into a running container. It does not widen what the
+container may touch: the cgroup rules above are the access policy, and anything
+outside them is refused even to root — `/dev/mem` is visible inside and answers
+`Operation not permitted`. The process runs as an unprivileged user added to
+the host's `i2c`, `input` and `video` groups by GID.
 
 `ROS_LOCALHOST_ONLY=1` keeps DDS inside the container. The only traffic on the
 network is the ZeroMQ link — one unicast TCP connection, which behaves over
@@ -82,6 +98,28 @@ override:
 Changing one is an edit and a restart, not a rebuild. The defaults behind them
 live in `src/hexapod_bridge/config/bridge.yaml`, which is the single source of
 truth — the compose file only overrides what varies between deployments.
+
+Four more variables decide which hardware is used at all, so a board that is
+not wired or a camera that is not plugged in is a choice rather than a wall of
+respawn errors:
+
+| Variable | Starts | Default |
+|---|---|---|
+| `HEXAPOD_WITH_SERVOS` | The servomotor node, on the I2C bus | `true` |
+| `HEXAPOD_WITH_JOYPAD` | The joystick driver and the remapper | `true` |
+| `HEXAPOD_WITH_BRIDGE` | The ZeroMQ bridge | `true` |
+| `HEXAPOD_WITH_CAMERA` | The RealSense D455 | `false` |
+
+```sh
+HEXAPOD_WITH_SERVOS=false docker compose up -d   # boards not wired yet
+HEXAPOD_WITH_CAMERA=true  docker compose up -d   # D455 attached
+```
+
+The camera is the only one off by default: its absence is the normal case, and
+starting it costs USB bandwidth and CPU the rest of the stack would rather
+have. Unlike the `HEXAPOD_BRIDGE_*` variables, these are baked into the
+container when it is created — `up -d` with a different value recreates it, a
+reboot brings back whatever was set last.
 
 A variable that is set but cannot be read stops the launch instead of falling
 back to the file value, so a typo in the compose file surfaces immediately.

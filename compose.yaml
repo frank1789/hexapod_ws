@@ -26,11 +26,26 @@ services:
     # The joints must not be left mid-pose because a process died.
     restart: unless-stopped
 
-    # Both PCA9685 boards, the joystick, and RealSense camera are on the host.
-    # Listing the devices one by one, rather than running privileged, keeps the
-    # container's reach limited to what the robot actually needs.
-    devices:
-      - /dev/i2c-1:/dev/i2c-1
+    # The hardware — two PCA9685 boards, a joystick, a RealSense camera — is on
+    # the host, and any of it may be absent. That rules out `devices:`, which is
+    # not a request but a preflight condition:
+    #
+    #   $ docker run --device /dev/video99 ...
+    #   error gathering device information while adding custom device
+    #   "/dev/video99": no such file or directory
+    #
+    # One unplugged camera and the container refuses to be created at all. So
+    # /dev is bind-mounted instead, which also means a device plugged in later
+    # appears inside a container that is already running — verified by creating
+    # a node on the host and finding it in the container without a restart.
+    #
+    # Seeing a node is not being allowed to open it. Access is decided by
+    # device_cgroup_rules below, and everything outside them is refused even to
+    # root: /dev/mem is visible in this container and answers "Operation not
+    # permitted". The reach stays as narrow as it was with `devices:`, while the
+    # container starts with whatever happens to be attached.
+    volumes:
+      - /dev:/dev
     # The device nodes belong to host groups, and the image's user is not in
     # them: without this the container opens /dev/i2c-1 as nobody and every
     # write fails with EACCES. Only the numeric GID crosses into the container,
@@ -43,37 +58,38 @@ services:
       - "${HEXAPOD_I2C_GID:-994}"    # i2c, for the PCA9685 boards
       - "${HEXAPOD_INPUT_GID:-102}"  # input, for the joystick
       - "${HEXAPOD_VIDEO_GID:-44}"   # video, for the RealSense camera
+    # This list is now the whole access policy, so it has to be complete: with
+    # `devices:` gone, nothing adds a rule implicitly any more. Each class is
+    # matched as a whole because the minor numbers move — the joystick's when it
+    # is re-paired, the camera's when it is replugged.
     device_cgroup_rules:
-      # Character devices 13:* are /dev/input/*, matched as a class because the
-      # joystick's number changes when it is re-paired.
-      - "c 13:* rmw"
-      # Character devices 81:* are /dev/video*, for the RealSense D455 camera.
-      # Video devices are matched as a class because device numbers vary.
-      - "c 81:* rmw"
-      # Character devices 189:* are USB devices, needed for RealSense USB access.
-      - "c 189:* rmw"
-    volumes:
-      - /dev/input:/dev/input:ro
-      # RealSense camera access - mount /dev/bus/usb for full camera functionality.
-      # The camera won't crash ROS if not connected; the launch file handles it gracefully.
-      - /dev/bus/usb:/dev/bus/usb:rw
+      - "c 89:* rmw"   # /dev/i2c-*, the two PCA9685 boards
+      - "c 13:* rmw"   # /dev/input/*, the joystick
+      - "c 81:* rmw"   # /dev/video*, the RealSense D455
+      - "c 189:* rmw"  # /dev/bus/usb/*, the RealSense control channel
 
-    # The servomotor node exits on any I2C failure and the launch file respawns
-    # it, so with the PCA9685 boards unplugged it restarts for as long as the
-    # container runs and buries every other node's output. Starting without it
-    # is then the sensible way to run — the bridge and the joypad do not touch
-    # the bus:
+    # One switch per piece of hardware, so a missing board or an unplugged
+    # camera is a choice rather than a wall of respawn errors:
     #
-    #   HEXAPOD_WITH_SERVOS=false docker compose up -d
+    #   HEXAPOD_WITH_SERVOS=false docker compose up -d   # boards not wired
+    #   HEXAPOD_WITH_CAMERA=true  docker compose up -d   # D455 attached
     #
-    # The default keeps the servos on, so a plain `up -d` still brings up the
-    # whole robot once the boards are wired back.
+    # The defaults match the launch file: servos, joypad and bridge on, camera
+    # off. The camera is the one part whose absence is the normal case, and it
+    # costs USB bandwidth and CPU the rest of the stack would rather have.
+    #
+    # These are baked into the container at creation, not read at each start —
+    # `docker compose up -d` with a different value recreates it, a reboot does
+    # not. Whatever was set last is what comes back.
     command:
       - ros2
       - launch
       - hexapod_bridge
       - hexapod.launch.py
       - "with_servos:=${HEXAPOD_WITH_SERVOS:-true}"
+      - "with_joypad:=${HEXAPOD_WITH_JOYPAD:-true}"
+      - "with_bridge:=${HEXAPOD_WITH_BRIDGE:-true}"
+      - "with_camera:=${HEXAPOD_WITH_CAMERA:-false}"
 
     # The bridge binds this port for the animation package to connect to.
     ports:

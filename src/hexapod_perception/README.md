@@ -67,7 +67,19 @@ When the camera is running, it publishes to:
 
 ## Docker
 
-The camera requires USB device access. See `compose.yaml` for the configuration.
+The camera requires USB device access. See `compose.yaml` for the configuration:
+`/dev` is bind-mounted and the cgroup rules `c 81:*` and `c 189:*` allow the
+video nodes and the USB control channel.
+
+The camera is off by default in the container, because the robot normally runs
+without it. Start it with:
+
+```sh
+HEXAPOD_WITH_CAMERA=true docker compose up -d
+```
+
+That turns on `with_camera:=true` in `hexapod.launch.py`, which includes this
+package's `realsense_d455.launch.py`.
 
 ## Validation Scripts
 

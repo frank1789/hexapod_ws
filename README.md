@@ -108,6 +108,14 @@ docker compose up -d --build          # the robot
 docker compose --profile dry up       # no I2C hardware
 ```
 
+The container starts with whatever hardware happens to be attached, and each
+part is a switch, so an unwired board or an unplugged camera costs nothing:
+
+```sh
+HEXAPOD_WITH_SERVOS=false docker compose up -d   # PCA9685 boards not wired
+HEXAPOD_WITH_CAMERA=true  docker compose up -d   # RealSense D455 attached
+```
+
 Configuration is environment variables in the compose file, turned into ROS
 parameters by the launch file, so changing the ZeroMQ endpoint or the joypad
 override timeout is an edit and a restart rather than a rebuild. Details in
