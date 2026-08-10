@@ -8,11 +8,17 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 
-# Install launch files
+# Install launch files and scripts
 install(DIRECTORY
   launch
   config
   DESTINATION share/${PROJECT_NAME}/
+)
+
+install(PROGRAMS
+  scripts/check_camera_permissions.sh
+  scripts/test_docker_camera.sh
+  DESTINATION share/${PROJECT_NAME}/scripts
 )
 
 if(BUILD_TESTING)
