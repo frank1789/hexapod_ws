@@ -37,6 +37,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <string>
+#include <string_view>
 #include <zmq.hpp>
 
 #include "hexapod_bridge/override_policy.h"
@@ -105,7 +106,7 @@ class BridgeNode : public rclcpp::Node {
   void PollSocket();
 
   /** @brief Decode one payload and publish it, or count it as rejected. */
-  void HandlePayload(const std::string& t_payload);
+  void HandlePayload(std::string_view t_payload);
 
   /** @brief Note deliberate joypad input and take the override. */
   void OnJoypadButton(const hexapod_msgs::msg::JoypadButton& t_message);

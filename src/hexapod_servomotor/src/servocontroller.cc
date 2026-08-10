@@ -54,8 +54,8 @@ constexpr int kDefaultMotorsPerSide{9}; /**< Three legs per side, three joints p
 constexpr int kDefaultSettleMs{50};     /**< Time given to a servo to reach its target. */
 constexpr int kTestStepDegree{5};       /**< Sweep granularity of the startup test. */
 
-constexpr char kDefaultCommandTopic[]{"joint_command"}; /**< Where poses arrive. */
-constexpr double kDefaultWriteRateHz{10.0};             /**< How often a pose is written. */
+const std::string kDefaultCommandTopic{"joint_command"}; /**< Where poses arrive. */
+constexpr double kDefaultWriteRateHz{10.0};              /**< How often a pose is written. */
 
 /** @brief Only the newest pose matters, so the queue holds exactly one. */
 constexpr int kCommandQueueDepth{1};
@@ -313,15 +313,17 @@ void ServoController::OnJointCommand(const sensor_msgs::msg::JointState& t_comma
   if (t_command.name.size() != t_command.position.size()) {
     ++rejected_commands_;
     RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
-                          "rejected a command with %zu names against %zu positions", t_command.name.size(),
-                          t_command.position.size());
+                          "rejected a command with %zu names against %zu positions (%lu refused so far)",
+                          t_command.name.size(), t_command.position.size(),
+                          static_cast<unsigned long>(rejected_commands_));
     return;
   }
 
   if (t_command.name.empty()) {
     ++rejected_commands_;
     RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
-                          "rejected an empty command, there is nothing to move");
+                          "rejected an empty command, there is nothing to move (%lu refused so far)",
+                          static_cast<unsigned long>(rejected_commands_));
     return;
   }
 
@@ -337,7 +339,8 @@ void ServoController::OnJointCommand(const sensor_msgs::msg::JointState& t_comma
     if (!std::isfinite(degree)) {
       ++rejected_commands_;
       RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
-                            "rejected a command: joint %s carries a non-finite angle", t_command.name[index].c_str());
+                            "rejected a command: joint %s carries a non-finite angle (%lu refused so far)",
+                            t_command.name[index].c_str(), static_cast<unsigned long>(rejected_commands_));
       return;
     }
     names.push_back(t_command.name[index]);

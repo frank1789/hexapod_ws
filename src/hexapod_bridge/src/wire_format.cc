@@ -44,6 +44,9 @@ namespace {
 /** @brief Unit string the sender must declare, so a radian sender is refused. */
 constexpr std::string_view kExpectedUnits{"deg"};
 
+/** @brief Degrees in a half turn, the bridge between degrees and radians. */
+constexpr double kHalfTurnDegrees{180.0};
+
 constexpr std::string_view kFieldSchema{"schema"};
 constexpr std::string_view kFieldSequence{"seq"};
 constexpr std::string_view kFieldUnits{"units"};
@@ -70,7 +73,7 @@ JointPose WireFormat::Decode(const std::string_view t_payload) {
   // once both ends agree on what the fields are.
   const auto schema = document.find(kFieldSchema);
   if (schema == document.end() || !schema->is_number_unsigned()) {
-    throw std::invalid_argument("field \"schema\" is missing or is not an unsigned number");
+    throw std::invalid_argument(R"(field "schema" is missing or is not an unsigned number)");
   }
   pose.schema = schema->get<std::uint32_t>();
   if (pose.schema != kSchemaVersion) {
@@ -80,11 +83,11 @@ JointPose WireFormat::Decode(const std::string_view t_payload) {
 
   const auto units = document.find(kFieldUnits);
   if (units == document.end() || !units->is_string()) {
-    throw std::invalid_argument("field \"units\" is missing or is not a string");
+    throw std::invalid_argument(R"(field "units" is missing or is not a string)");
   }
   if (units->get<std::string>() != kExpectedUnits) {
     throw std::invalid_argument(
-        fmt::format("units \"{}\" are not supported, expected \"{}\"", units->get<std::string>(), kExpectedUnits));
+        fmt::format(R"(units "{}" are not supported, expected "{}")", units->get<std::string>(), kExpectedUnits));
   }
 
   // A missing sequence number is tolerated: it only serves to report gaps.
@@ -95,10 +98,10 @@ JointPose WireFormat::Decode(const std::string_view t_payload) {
 
   const auto joints = document.find(kFieldJoints);
   if (joints == document.end() || !joints->is_object()) {
-    throw std::invalid_argument("field \"joints\" is missing or is not an object");
+    throw std::invalid_argument(R"(field "joints" is missing or is not an object)");
   }
   if (joints->empty()) {
-    throw std::invalid_argument("field \"joints\" is empty, there is nothing to command");
+    throw std::invalid_argument(R"(field "joints" is empty, there is nothing to command)");
   }
 
   pose.names.reserve(joints->size());
@@ -146,8 +149,12 @@ std::string WireFormat::Encode(const JointPose& t_pose) {
   return document.dump();
 }
 
-double WireFormat::DegreesToRadians(const double t_degrees) noexcept { return t_degrees * std::numbers::pi / 180.0; }
+double WireFormat::DegreesToRadians(const double t_degrees) noexcept {
+  return t_degrees * std::numbers::pi / kHalfTurnDegrees;
+}
 
-double WireFormat::RadiansToDegrees(const double t_radians) noexcept { return t_radians * 180.0 / std::numbers::pi; }
+double WireFormat::RadiansToDegrees(const double t_radians) noexcept {
+  return t_radians * kHalfTurnDegrees / std::numbers::pi;
+}
 
 }  // namespace hexapod::bridge

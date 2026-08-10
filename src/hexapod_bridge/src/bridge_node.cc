@@ -44,10 +44,10 @@ namespace hexapod::bridge {
 
 namespace {
 
-constexpr char kDefaultEndpoint[]{"tcp://0.0.0.0:5556"};
-constexpr char kDefaultOutputTopic[]{"joint_command"};
-constexpr char kTopicJoypadButton[]{"joypad/button"};
-constexpr char kTopicJoypadThumbstick[]{"joypad/thumbstick"};
+const std::string kDefaultEndpoint{"tcp://0.0.0.0:5556"};
+const std::string kDefaultOutputTopic{"joint_command"};
+const std::string kTopicJoypadButton{"joypad/button"};
+const std::string kTopicJoypadThumbstick{"joypad/thumbstick"};
 
 constexpr int kDefaultPollPeriodMs{5};
 constexpr int kDefaultOverrideTimeoutMs{1500};
@@ -59,6 +59,9 @@ constexpr int kQueueDepth{1};
 /** @brief How often a repeated rejection may be logged, in milliseconds. */
 constexpr int kLogThrottleMs{2000};
 
+/** @brief Joypad input is sparse, but a press must not be dropped under load. */
+constexpr int kJoypadQueueDepth{10};
+
 }  // namespace
 
 BridgeNode::BridgeNode() : Node("hexapod_bridge"), context_{1} {
@@ -68,11 +71,11 @@ BridgeNode::BridgeNode() : Node("hexapod_bridge"), context_{1} {
   joint_publisher_ = create_publisher<sensor_msgs::msg::JointState>(output_topic_, rclcpp::QoS(kQueueDepth));
 
   button_subscriber_ = create_subscription<hexapod_msgs::msg::JoypadButton>(
-      kTopicJoypadButton, rclcpp::QoS(10),
+      kTopicJoypadButton, rclcpp::QoS(kJoypadQueueDepth),
       [this](const hexapod_msgs::msg::JoypadButton& message) { OnJoypadButton(message); });
 
   thumbstick_subscriber_ = create_subscription<hexapod_msgs::msg::JoypadThumbstick>(
-      kTopicJoypadThumbstick, rclcpp::QoS(10),
+      kTopicJoypadThumbstick, rclcpp::QoS(kJoypadQueueDepth),
       [this](const hexapod_msgs::msg::JoypadThumbstick& message) { OnJoypadThumbstick(message); });
 
   const auto poll_period = std::chrono::milliseconds{get_parameter("poll_period_ms").as_int()};
@@ -158,11 +161,11 @@ void BridgeNode::PollSocket() {
       return;
     }
 
-    HandlePayload(message.to_string());
+    HandlePayload(message.to_string_view());
   }
 }
 
-void BridgeNode::HandlePayload(const std::string& t_payload) {
+void BridgeNode::HandlePayload(const std::string_view t_payload) {
   JointPose pose{};
   try {
     pose = WireFormat::Decode(t_payload);
