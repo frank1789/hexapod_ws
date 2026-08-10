@@ -31,6 +31,18 @@ services:
     # container's reach limited to what the robot actually needs.
     devices:
       - /dev/i2c-1:/dev/i2c-1
+    # The device nodes belong to host groups, and the image's user is not in
+    # them: without this the container opens /dev/i2c-1 as nobody and every
+    # write fails with EACCES. Only the numeric GID crosses into the container,
+    # where it may carry a different name — 994 is i2c on this Pi and render
+    # inside the image, which is harmless, the kernel checks the number.
+    #
+    # The defaults are the GIDs of this Pi; `getent group i2c input video` on
+    # another host may print others, hence the overrides.
+    group_add:
+      - "${HEXAPOD_I2C_GID:-994}"    # i2c, for the PCA9685 boards
+      - "${HEXAPOD_INPUT_GID:-102}"  # input, for the joystick
+      - "${HEXAPOD_VIDEO_GID:-44}"   # video, for the RealSense camera
     device_cgroup_rules:
       # Character devices 13:* are /dev/input/*, matched as a class because the
       # joystick's number changes when it is re-paired.
