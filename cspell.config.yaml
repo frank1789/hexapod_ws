@@ -157,7 +157,16 @@ words:
   - analyzer
   - Doxyfile
   - raspi
+  - raspberrypi
   - usermod
+  # Debian tooling, Pi boot keys and kernel paths named by the setup script
+  - dpkg
+  - dtparam
+  - armv
+  - upgr
+  - proc
+  - swapfile
+  - swapon
   - cdetect
   - dasharray
   - rect

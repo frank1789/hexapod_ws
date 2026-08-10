@@ -2,6 +2,7 @@
 
 | Document | Contents |
 |---|---|
+| [Setting up a Raspberry Pi](raspberry-pi.md) | The install script, which image to flash, enabling I²C, sizing the build, and what to do when a step fails |
 | [The PCA9685 servo board](pca9685.md) | How the hardware generates PWM, its registers and timing, the wiring, and what the driver validates |
 | [Configuring the robot](configuration.md) | Every node parameter, the two Lua scripts, how to tune the pulse limits, and how to read the logs |
 | [Architecture](architecture.md) | The four packages, the topics between them, and how failures are handled |
