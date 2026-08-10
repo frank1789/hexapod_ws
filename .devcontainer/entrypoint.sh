@@ -6,6 +6,9 @@
 # without defining them first, and would abort the entrypoint.
 set -e
 
+# Set AMENT_TRACE_SETUP_FILES to empty if unset to prevent 'unbound variable' errors
+export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
+
 # shellcheck source=/dev/null
 source "/opt/ros/${ROS_DISTRO}/setup.bash"
 

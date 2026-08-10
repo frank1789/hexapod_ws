@@ -177,9 +177,14 @@ WORKDIR /workspace
 
 # Interactive shells get ROS and, once built, the workspace overlay.
 # rosdep runs as the user because it writes into ${HOME}/.ros.
+# AMENT_TRACE_SETUP_FILES is read by setup.bash but not defined; set it empty
+# to prevent 'unbound variable' errors in strict shells.
 RUN printf '%s\n' \
+        'export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"' \
         "source /opt/ros/${ROS_DISTRO}/setup.bash" \
         'if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi' \
+        'export RCUTILS_COLORIZED_OUTPUT=1' \
+        'export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}]: {message}"' \
         >> "${HOME}/.bashrc" \
     && rosdep update --rosdistro "${ROS_DISTRO}"
 
