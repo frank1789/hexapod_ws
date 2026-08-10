@@ -57,9 +57,15 @@ def generate_launch_description():
             'enable_depth': LaunchConfiguration('enable_depth'),
             'enable_infra1': False,
             'enable_infra2': False,
-            'enable_confidence': True,
-            'depth_module.profile': '848x480x30',
-            'rgb_camera.profile': '640x480x30',
+            # These two are depth_module.profile and rgb_camera.profile in
+            # realsense2_camera up to 4.51. This image ships a later one, where
+            # the old names are accepted, never read, and silently do nothing:
+            # `ros2 param get /d455 rgb_camera.profile` answers "Parameter not
+            # set" while the camera streams 1280x720, its default, rather than
+            # the 640x480 asked for here. The depth line looked as if it worked
+            # only because 848x480x30 happens to be the default too.
+            'depth_module.depth_profile': '848x480x30',
+            'rgb_camera.color_profile': '640x480x30',
             'align_depth.enable': True,
             'initial_reset': True,
         }],
