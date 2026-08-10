@@ -105,6 +105,11 @@ def generate_launch_description():
                 name="servomotors_node",
                 output="screen",
                 respawn=True,
+                # The node exits on any I2C failure, by design. Without a delay
+                # a board that does not answer — unpowered, unplugged, wrong
+                # address — is retried about four times a second for as long as
+                # the container runs, which floods the log and hammers the bus.
+                respawn_delay=2.0,
                 condition=IfCondition(with_servos),
                 parameters=[servo_parameters],
             ),
