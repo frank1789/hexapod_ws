@@ -91,9 +91,22 @@ services:
     healthcheck:
       # The bridge is alive if its topic is being advertised. This checks the
       # ROS graph, not just that the process has not exited.
-      test: ["CMD-SHELL", "ros2 topic list | grep -q joint_command"]
+      #
+      # The check does not go through entrypoint.sh, so it has to source ROS
+      # itself: without that the shell reports "ros2: not found" and the
+      # container is marked unhealthy however well the bridge is running. The
+      # $$ keeps the variable for the container's shell instead of letting
+      # compose interpolate it from the host environment.
+      #
+      # --no-daemon is required, not a preference: the daemon answers from a
+      # cache populated before the nodes finished starting, and lists only
+      # /rosout and /parameter_events. It also leaves a process behind on every
+      # probe. Discovery without it takes about five seconds, hence the timeout.
+      test:
+        - "CMD-SHELL"
+        - ". /opt/ros/$$ROS_DISTRO/setup.sh && ros2 topic list --no-daemon | grep -q joint_command"
       interval: 30s
-      timeout: 10s
+      timeout: 15s
       start_period: 40s
       retries: 3
 
