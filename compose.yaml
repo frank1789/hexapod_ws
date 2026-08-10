@@ -101,12 +101,23 @@ services:
       # --no-daemon is required, not a preference: the daemon answers from a
       # cache populated before the nodes finished starting, and lists only
       # /rosout and /parameter_events. It also leaves a process behind on every
-      # probe. Discovery without it takes about five seconds, hence the timeout.
+      # probe.
+      #
+      # --spin-time only applies without the daemon, and its default of one
+      # second is not enough on a loaded Pi: two probes out of five came back
+      # empty and the container flapped. Five seconds passed six times out of
+      # six, at about eleven seconds a probe — hence the wider timeout and the
+      # longer interval, which also keeps a ten-second Python start-up from
+      # running a third of the time.
+      #
+      # grep without -q reads the stream to the end. With -q it exits on the
+      # first match and ros2 dies of SIGPIPE, printing a BrokenPipeError
+      # traceback into the health log for what is a passing check.
       test:
         - "CMD-SHELL"
-        - ". /opt/ros/$$ROS_DISTRO/setup.sh && ros2 topic list --no-daemon | grep -q joint_command"
-      interval: 30s
-      timeout: 15s
+        - ". /opt/ros/$$ROS_DISTRO/setup.sh && ros2 topic list --no-daemon --spin-time 5 | grep joint_command >/dev/null"
+      interval: 60s
+      timeout: 25s
       start_period: 40s
       retries: 3
 
