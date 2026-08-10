@@ -62,16 +62,26 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # liblua5.3-dev: hexapod_servomotor does find_package(Lua 5.3 REQUIRED), which
 #                needs lua.h — the lua5.3 interpreter package alone is not enough.
 # libi2c-dev:    i2c-peripheral.cc includes <i2c/smbus.h> and the node links -li2c.
+# libzmq3-dev,
+# libfmt-dev,
+# nlohmann-json: hexapod_bridge links all three. vcpkg (vcpkg.json) is the
+#                intended source and the container image uses it, but having the
+#                apt packages here as well means a plain colcon build inside the
+#                dev container works without bootstrapping anything.
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
+        libfmt-dev \
         libi2c-dev \
         liblua5.3-dev \
+        libzmq3-dev \
         lua5.3 \
         ninja-build \
+        nlohmann-json3-dev \
         pkg-config \
+        zip \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------- ROS 2

@@ -45,15 +45,25 @@ readonly -a PACKAGES_BASE=(
   python3-pip
 )
 
-# The two system libraries hexapod_servomotor links against, plus the tools to
-# inspect the bus by hand. liblua5.3-dev is the development package on purpose:
+# The system libraries the workspace links against, plus the tools to inspect
+# the bus by hand. liblua5.3-dev is the development package on purpose:
 # find_package(Lua 5.3 REQUIRED) needs lua.h, the interpreter alone is not
 # enough. i2c-tools provides i2cdetect, used below to probe for the boards.
+#
+# libzmq3-dev, libfmt-dev and nlohmann-json3-dev are what hexapod_bridge needs.
+# vcpkg is the intended source for all three (see vcpkg.json), but a native
+# build on the Pi should not have to compile them from scratch, so the apt
+# packages are installed as well and CMake takes whichever it finds. cppzmq is
+# the exception: Debian does not package that single header, so the build
+# fetches it when vcpkg is not in use.
 readonly -a PACKAGES_PROJECT=(
   i2c-tools
+  libfmt-dev
   libi2c-dev
   liblua5.3-dev
+  libzmq3-dev
   lua5.3
+  nlohmann-json3-dev
 )
 
 # ------------------------------------------------------------------ logging

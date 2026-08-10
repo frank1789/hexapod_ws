@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hexapod_bridge</name>
+  <version>0.3.0</version>
+  <description>
+    Carries joint poses from an animation package into the ROS 2 graph over
+    ZeroMQ, and arbitrates between that stream and the joypad.
+  </description>
+
+  <maintainer email="francesco.argentieri89@gmail.com">Francesco Argentieri</maintainer>
+  <author email="francesco.argentieri89@gmail.com">Francesco Argentieri</author>
+  <author email="uni.lorenzo.a@gmail.com">Lorenzo Argentieri</author>
+
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>hexapod_msgs</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <!--
+    cppzmq, ZeroMQ, fmt and nlohmann-json come from vcpkg (see vcpkg.json at the
+    root of the workspace) or, on a native build, from apt. They are deliberately
+    not listed as dependencies here: they are not rosdep keys, and an
+    unresolvable key would make `rosdep install` fail for the whole workspace.
+  -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

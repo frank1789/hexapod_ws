@@ -167,6 +167,33 @@ words:
   - proc
   - swapfile
   - swapon
+  # transports and clients evaluated for the Maya/Blender bridge
+  - rclpy
+  - pyzmq
+  - libzmq
+  - cppzmq
+  - grpcio
+  - grpcurl
+  - rosbridge
+  - roslibpy
+  - zenoh
+  - brokerless
+  - backpressure
+  # container, vcpkg and third-party library names
+  - libfmt
+  - nlohmann
+  - vcpkg
+  - zeromq
+  - buildx
+  - buildsystems
+  - DVCPKG
+  - keyframed
+  - pyzmq
+  - Eigen
+  - RCUTILS
+  - healthcheck
+  - dontwait
+  - sockopt
   - cdetect
   - dasharray
   - rect

@@ -1,0 +1,14 @@
+{
+  "name": "hexapod-ws",
+  "version-string": "0.3.0",
+  "description": "ROS 2 workspace for an eighteen degree-of-freedom hexapod robot",
+  "homepage": "https://github.com/frank1789/hexapod_ws",
+  "license": "MIT",
+  "dependencies": [
+    "cppzmq",
+    "eigen3",
+    "fmt",
+    "nlohmann-json",
+    "zeromq"
+  ]
+}

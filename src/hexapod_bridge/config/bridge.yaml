@@ -1,0 +1,36 @@
+# Parameters of the ZeroMQ bridge node.
+#
+# This is the single source of truth for the bridge, in the same YAML the rest
+# of the workspace uses for node parameters, so `ros2 param` and launch-time
+# overrides keep working. docker compose feeds the values that change per
+# deployment through environment variables, which the launch file turns into
+# parameter overrides — see docker/compose.yaml.
+#
+# The Python sender reads this same file, so the endpoint is written down once.
+/**:
+  ros__parameters:
+    # Where the pose stream arrives. The bridge binds this endpoint by default,
+    # so the animation package connects to the address of the Raspberry Pi.
+    endpoint: "tcp://0.0.0.0:5556"
+
+    # Bind the endpoint rather than connecting to it. Bind on the robot,
+    # connect from the workstation.
+    bind: true
+
+    # Topic the decoded poses are published on, in radians, as
+    # sensor_msgs/msg/JointState.
+    output_topic: "joint_command"
+
+    # How often the socket is drained, in milliseconds. The socket keeps only
+    # the newest message, so this sets the worst-case age of a pose, not a
+    # throughput limit. 5 ms is far below the 20 ms PWM period.
+    poll_period_ms: 5
+
+    # How long the joypad must stay quiet before the streamed poses are allowed
+    # to drive the joints again. Taking hold of the joypad freezes the robot;
+    # this is how long after letting go it starts moving once more.
+    override_timeout_ms: 1500
+
+    # Thumbstick magnitude below which a stick is treated as resting. A worn
+    # stick never returns exactly to zero, and noise must not freeze the robot.
+    thumbstick_deadzone: 0.25
