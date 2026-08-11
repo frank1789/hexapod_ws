@@ -16,6 +16,10 @@ The camera defaults to off. It is the only part whose absence is the normal
 case rather than the exception, and starting it costs USB bandwidth and CPU
 that the rest of the stack would rather have.
 
+`with_streaming:=true` adds an RTSP server over the camera topics, for Frigate,
+Home Assistant or a browser. It is off by default and it needs the camera: on
+its own it serves paths whose topics nobody publishes.
+
 The bridge is included from its own launch file rather than declared again
 here, so the environment overrides docker compose relies on are defined in one
 place only.
@@ -41,12 +45,16 @@ def generate_launch_description():
     with_joypad = LaunchConfiguration("with_joypad")
     with_bridge = LaunchConfiguration("with_bridge")
     with_camera = LaunchConfiguration("with_camera")
+    with_streaming = LaunchConfiguration("with_streaming")
 
     # Resolved when the include runs rather than now, unlike the two paths
     # below: with with_camera:=false the condition is false, the substitution
     # is never evaluated, and hexapod_perception need not be installed at all.
     camera_launch = PathJoinSubstitution(
         [FindPackageShare("hexapod_perception"), "launch", "realsense_d455.launch.py"]
+    )
+    streaming_launch = PathJoinSubstitution(
+        [FindPackageShare("hexapod_perception"), "launch", "camera_streaming.launch.py"]
     )
 
     bridge_launch = os.path.join(
@@ -92,6 +100,11 @@ def generate_launch_description():
                 default_value="false",
                 description="start the RealSense D455 (needs the camera on USB 3)",
             ),
+            DeclareLaunchArgument(
+                "with_streaming",
+                default_value="false",
+                description="serve the camera topics over RTSP (needs with_camera)",
+            ),
             Node(
                 package="joy",
                 executable="joy_node",
@@ -136,6 +149,10 @@ def generate_launch_description():
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(camera_launch),
                 condition=IfCondition(with_camera),
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(streaming_launch),
+                condition=IfCondition(with_streaming),
             ),
         ]
     )

@@ -103,6 +103,7 @@ RUN VCPKG_TRIPLET="$(cat /opt/vcpkg_triplet)" \
 FROM ros:${ROS_DISTRO}-ros-base AS runtime
 
 ARG ROS_DISTRO
+ARG MEDIAMTX_VERSION=1.20.0
 ENV ROS_DISTRO=${ROS_DISTRO} \
     DEBIAN_FRONTEND=noninteractive
 
@@ -115,19 +116,41 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # i2c-tools is kept deliberately: when a joint does not move, the first question
 # is whether the boards answer, and answering it inside the container beats
 # guessing from outside it.
+#
+# ffmpeg, numpy and OpenCV are the RTSP streaming path. The last two arrive
+# anyway as dependencies of realsense2_camera, and are named here because a
+# feature that breaks when an unrelated package drops a dependency is a feature
+# that breaks for reasons nobody will look for.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        curl \
+        ffmpeg \
         i2c-tools \
         libi2c0 \
         liblua5.3-0 \
+        python3-numpy \
+        python3-opencv \
         ros-${ROS_DISTRO}-joy \
         ros-${ROS_DISTRO}-robot-state-publisher \
         ros-${ROS_DISTRO}-realsense2-camera \
         ros-${ROS_DISTRO}-realsense2-description \
     && rm -rf /var/lib/apt/lists/*
 
+# MediaMTX is the RTSP server. It ships as one static binary with no packaging
+# in any distribution, so it is fetched by pinned version rather than installed;
+# the architecture suffix follows the build machine, the way the vcpkg triplet
+# does in the builder stage.
+RUN MEDIAMTX_ARCH="$(uname -m | sed 's/aarch64/arm64/; s/x86_64/amd64/')" \
+    && curl -fsSL -o /tmp/mediamtx.tar.gz \
+        "https://github.com/bluenviron/mediamtx/releases/download/v${MEDIAMTX_VERSION}/mediamtx_v${MEDIAMTX_VERSION}_linux_${MEDIAMTX_ARCH}.tar.gz" \
+    && tar -xzf /tmp/mediamtx.tar.gz -C /usr/local/bin mediamtx \
+    && chmod 0755 /usr/local/bin/mediamtx \
+    && rm -f /tmp/mediamtx.tar.gz \
+    && mediamtx --version
+
 COPY --from=builder /ws/install /opt/hexapod
 COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=0755 docker/hexapod-stream.sh /usr/local/bin/hexapod-stream
 
 # The container runs as a normal user in the i2c, input, and video groups. Root
 # would work, but a process that can reach every device on the bus is not what
@@ -148,8 +171,9 @@ RUN if getent passwd ${USER_UID} >/dev/null; then \
 USER ${USERNAME}
 WORKDIR /opt/hexapod
 
-# The ZeroMQ endpoint the bridge binds. Publishing it is compose's business.
-EXPOSE 5556
+# The ZeroMQ endpoint the bridge binds, and the three ways the camera streams
+# leave the container. Publishing any of them is compose's business.
+EXPOSE 5556 8554 8888 8889
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["ros2", "launch", "hexapod_bridge", "hexapod.launch.py"]

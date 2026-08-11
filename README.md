@@ -116,6 +116,24 @@ HEXAPOD_WITH_SERVOS=false docker compose up -d   # PCA9685 boards not wired
 HEXAPOD_WITH_CAMERA=true  docker compose up -d   # RealSense D455 attached
 ```
 
+With the camera attached, `HEXAPOD_WITH_STREAMING=true` serves what it sees over
+RTSP, for Frigate, Home Assistant or a browser:
+
+```sh
+HEXAPOD_WITH_CAMERA=true HEXAPOD_WITH_STREAMING=true docker compose up -d
+```
+
+```text
+rtsp://<pi>:8554/color            rtsp://<pi>:8554/depth
+http://<pi>:8889/color/           in a browser, no plugin
+```
+
+The depth path carries a heatmap rather than measurements: sixteen-bit
+millimetres do not fit through H.264, so they are mapped onto a colour ramp for
+the stream only — `/d455/depth/image_rect_raw` keeps its millimetres. Nothing is
+encoded until somebody watches. Details in [streaming the
+camera](doc/camera-streaming.md).
+
 Configuration is environment variables in the compose file, turned into ROS
 parameters by the launch file, so changing the ZeroMQ endpoint or the joypad
 override timeout is an edit and a restart rather than a rebuild. Details in

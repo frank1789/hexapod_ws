@@ -197,6 +197,22 @@ words:
   - cdetect
   - dasharray
   - rect
+  # RTSP streaming: MediaMTX, ffmpeg, and the NumPy calls behind the heatmap
+  - mediamtx
+  - rtsp
+  - rtmp
+  - webrtc
+  - libx
+  - rawvideo
+  - zerolatency
+  - ffplay
+  - ffprobe
+  - numpy
+  - frombuffer
+  - ascontiguousarray
+  - tobytes
+  - bigendian
+  - colouriser
   # camera, kernel and container vocabulary the tooling already used
   - realsense
   - librealsense

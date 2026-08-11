@@ -74,9 +74,14 @@ services:
     #   HEXAPOD_WITH_SERVOS=false docker compose up -d   # boards not wired
     #   HEXAPOD_WITH_CAMERA=true  docker compose up -d   # D455 attached
     #
+    #   # camera on and streaming to Frigate, Home Assistant or a browser
+    #   HEXAPOD_WITH_CAMERA=true HEXAPOD_WITH_STREAMING=true docker compose up -d
+    #
     # The defaults match the launch file: servos, joypad and bridge on, camera
-    # off. The camera is the one part whose absence is the normal case, and it
-    # costs USB bandwidth and CPU the rest of the stack would rather have.
+    # and streaming off. The camera is the one part whose absence is the normal
+    # case, and it costs USB bandwidth and CPU the rest of the stack would
+    # rather have. Streaming needs the camera; on its own it serves paths whose
+    # topics nobody publishes.
     #
     # These are baked into the container at creation, not read at each start —
     # `docker compose up -d` with a different value recreates it, a reboot does
@@ -90,10 +95,21 @@ services:
       - "with_joypad:=${HEXAPOD_WITH_JOYPAD:-true}"
       - "with_bridge:=${HEXAPOD_WITH_BRIDGE:-true}"
       - "with_camera:=${HEXAPOD_WITH_CAMERA:-false}"
+      - "with_streaming:=${HEXAPOD_WITH_STREAMING:-false}"
 
-    # The bridge binds this port for the animation package to connect to.
+    # 5556 is the ZeroMQ endpoint the bridge binds for the animation package.
+    # The other three are the camera, and they listen whether or not anything is
+    # streaming: MediaMTX encodes on demand, so an unused port here costs a
+    # listening socket and nothing else.
+    #
+    #   rtsp://<pi>:8554/color    rtsp://<pi>:8554/depth     Frigate, HA, VLC
+    #   http://<pi>:8889/color/                              browser, WebRTC
+    #   http://<pi>:8888/color/index.m3u8                    browser, HLS
     ports:
       - "${HEXAPOD_BRIDGE_PORT:-5556}:5556"
+      - "${HEXAPOD_RTSP_PORT:-8554}:8554"
+      - "${HEXAPOD_HLS_PORT:-8888}:8888"
+      - "${HEXAPOD_WEBRTC_PORT:-8889}:8889"
 
     environment:
       # --- ZeroMQ bridge ---------------------------------------------------
@@ -109,6 +125,23 @@ services:
       # again. Holding the joypad freezes the joints.
       HEXAPOD_BRIDGE_OVERRIDE_TIMEOUT_MS: "1500"
       HEXAPOD_BRIDGE_THUMBSTICK_DEADZONE: "0.25"
+
+      # --- camera streaming ------------------------------------------------
+      # Read by the streaming node; see src/hexapod_perception/scripts/.
+      #
+      # libx264 is the default because it always works. h264_v4l2m2m hands the
+      # job to the Pi 4 hardware encoder for roughly a quarter of the CPU, but
+      # there is one of it: two streams contend, and a process killed mid-encode
+      # can leave the device wedged until the module is reloaded. The Pi 5 has
+      # no such encoder at all.
+      HEXAPOD_STREAM_ENCODER: "${HEXAPOD_STREAM_ENCODER:-libx264}"
+
+      # The window the depth heatmap spans, in metres. Everything nearer than
+      # the minimum or further than the maximum saturates at the end of the
+      # colour ramp; pixels the camera could not resolve stay black. Narrow it
+      # and near objects separate more clearly.
+      HEXAPOD_STREAM_DEPTH_MIN_M: "0.3"
+      HEXAPOD_STREAM_DEPTH_MAX_M: "4.0"
 
       # --- ROS -------------------------------------------------------------
       # DDS stays inside the container: the only traffic that crosses the
