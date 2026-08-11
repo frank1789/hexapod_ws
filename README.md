@@ -37,6 +37,26 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 rosdep install --from-paths src --ignore-src -y
 ```
 
+### On a Raspberry Pi
+
+One command takes a freshly flashed Raspberry Pi 4 Model B or 5 to the point
+where the workspace builds — packages, ROS 2, `rosdep`, the I²C interface, and a
+build sized for the memory the board actually has:
+
+```sh
+./scripts/install-raspberrypi.sh          # --dry-run first, if you prefer
+```
+
+Run it as your normal user, not with `sudo`. It is idempotent, so re-running it
+after a failure or a reboot only does the work still missing.
+
+The robot must run **Ubuntu Server 24.04 LTS, 64-bit**. Raspberry Pi OS is
+Debian based and `packages.ros.org` publishes no suite for it, so ROS 2 cannot
+be installed from apt there at all — the script checks and stops rather than
+leaving a half-configured system. See
+[the Raspberry Pi notes](doc/raspberry-pi.md) for the flags, what resolves
+itself, and what to do when a step fails.
+
 ## Build
 
 ```sh
@@ -100,14 +120,18 @@ echo "source $(pwd)/install/setup.bash" >> ~/.bashrc
 
 ### On the robot
 
-The servo node needs access to the I²C bus. Enable the interface and add
-yourself to the `i2c` group — logging out and back in is required for the group
-to take effect:
+The servo node needs access to the I²C bus.
+[`scripts/install-raspberrypi.sh`](scripts/install-raspberrypi.sh) does this as
+part of the setup: it enables the interface, loads `i2c-dev` at boot and adds
+you to the `i2c` and `input` groups. By hand, the same thing is:
 
 ```sh
 sudo raspi-config          # Interface Options -> I2C -> enable
 sudo usermod -aG i2c "$USER"
 ```
+
+Either way a reboot — or at least a fresh login — is required before the group
+takes effect.
 
 Check that both boards answer before running anything:
 
@@ -187,6 +211,7 @@ controller, follow [this guide](https://pimylifeup.com/raspberry-pi-playstation-
 
 | Document | Contents |
 |---|---|
+| [Setting up a Raspberry Pi](doc/raspberry-pi.md) | The install script, the supported image, I²C, build memory, troubleshooting |
 | [The PCA9685 servo board](doc/pca9685.md) | PWM generation, registers, timing, wiring, driver validation |
 | [Configuring the robot](doc/configuration.md) | Node parameters, the Lua scripts, tuning, reading the logs |
 | [Architecture](doc/architecture.md) | Packages, topics, failure behaviour |
