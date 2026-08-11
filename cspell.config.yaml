@@ -167,9 +167,64 @@ words:
   - proc
   - swapfile
   - swapon
+  # transports and clients evaluated for the Maya/Blender bridge
+  - rclpy
+  - pyzmq
+  - libzmq
+  - cppzmq
+  - grpcio
+  - grpcurl
+  - rosbridge
+  - roslibpy
+  - zenoh
+  - brokerless
+  - backpressure
+  # container, vcpkg and third-party library names
+  - libfmt
+  - nlohmann
+  - vcpkg
+  - zeromq
+  - buildx
+  - buildsystems
+  - DVCPKG
+  - keyframed
+  - pyzmq
+  - Eigen
+  - RCUTILS
+  - healthcheck
+  - dontwait
+  - sockopt
   - cdetect
   - dasharray
   - rect
+  # RTSP streaming: MediaMTX, ffmpeg, and the NumPy calls behind the heatmap
+  - mediamtx
+  - rtsp
+  - rtmp
+  - webrtc
+  - libx
+  - rawvideo
+  - zerolatency
+  - ffplay
+  - ffprobe
+  - numpy
+  - frombuffer
+  - ascontiguousarray
+  - tobytes
+  - bigendian
+  - colouriser
+  # camera, kernel and container vocabulary the tooling already used
+  - realsense
+  - librealsense
+  - dkms
+  - passthrough
+  - replugged
+  - respawned
+  - rosout
+  - EACCES
+  - SIGPIPE
+  - GNUCXX
+  - kitware
   # known misspellings that are part of an interface, see CLAUDE.md
   - magnitute
   - exapod

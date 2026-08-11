@@ -1,13 +1,18 @@
 # hexapod_ws
 
-ROS 2 workspace for an eighteen degree-of-freedom hexapod: a PS3 joypad drives
-eighteen servos through two Adafruit PCA9685 boards on the I²C bus of a
-Raspberry Pi.
+ROS 2 workspace for an eighteen degree-of-freedom hexapod. Poses come from an
+animation package over ZeroMQ or from a PS3 joypad, and drive eighteen servos
+through two Adafruit PCA9685 boards on the I²C bus of a Raspberry Pi.
 
-![From the joypad to the joints](doc/images/data-flow.svg)
+![How the nodes interact](doc/images/data-flow.svg)
+
+The joypad has the last word: touching it freezes the joints wherever the last
+pose left them, and the streamed poses resume once it has been quiet. See
+[the ZeroMQ bridge](doc/zeromq-bridge.md).
 
 - [Requirements](#requirements)
 - [Build](#build)
+- [Container](#container)
 - [Test](#test)
 - [Install](#install)
 - [Run](#run)
@@ -21,8 +26,10 @@ Raspberry Pi.
 |---|---|
 | ROS 2 | Jazzy (any distribution works; nothing hard-codes one) |
 | Compiler | C++20, strict ISO, no GNU extensions |
-| System libraries | `liblua5.3-dev`, `libi2c-dev` |
-| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2), when not already installed |
+| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json` — see [`vcpkg.json`](vcpkg.json) |
+| System libraries | `liblua5.3-dev`, `libi2c-dev`, and `libzmq3-dev`, `libfmt-dev`, `nlohmann-json3-dev` when building without vcpkg |
+| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2) and [cppzmq](https://github.com/zeromq/cppzmq), when not already installed |
+| Workstation | Python with `pyzmq`, inside Maya or Blender |
 | Hardware | Raspberry Pi with I²C enabled, two PCA9685 boards, separate 5 V servo supply |
 
 The supported environment is the dev container in
@@ -75,12 +82,62 @@ colcon build --symlink-install --packages-select hexapod_servomotor
 read from the install tree, so with symlinks an edit takes effect without
 rebuilding.
 
+To build against vcpkg rather than the system packages, point CMake at its
+toolchain — this is what the container image does:
+
+```sh
+colcon build --cmake-args \
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+```
+
 Install the git hooks once per clone (the dev container does it for you):
 
 ```sh
 pre-commit install
 pre-commit run --all-files
 ```
+
+## Container
+
+The image builds the workspace and ships only what is needed to run it, which
+is the intended way to put the robot on a Pi without installing a toolchain
+there:
+
+```sh
+docker compose up -d --build          # the robot
+docker compose --profile dry up       # no I2C hardware
+```
+
+The container starts with whatever hardware happens to be attached, and each
+part is a switch, so an unwired board or an unplugged camera costs nothing:
+
+```sh
+HEXAPOD_WITH_SERVOS=false docker compose up -d   # PCA9685 boards not wired
+HEXAPOD_WITH_CAMERA=true  docker compose up -d   # RealSense D455 attached
+```
+
+With the camera attached, `HEXAPOD_WITH_STREAMING=true` serves what it sees over
+RTSP, for Frigate, Home Assistant or a browser:
+
+```sh
+HEXAPOD_WITH_CAMERA=true HEXAPOD_WITH_STREAMING=true docker compose up -d
+```
+
+```text
+rtsp://<pi>:8554/color            rtsp://<pi>:8554/depth
+http://<pi>:8889/color/           in a browser, no plugin
+```
+
+The depth path carries a heatmap rather than measurements: sixteen-bit
+millimetres do not fit through H.264, so they are mapped onto a colour ramp for
+the stream only — `/d455/depth/image_rect_raw` keeps its millimetres. Nothing is
+encoded until somebody watches. Details in [streaming the
+camera](doc/camera-streaming.md).
+
+Configuration is environment variables in the compose file, turned into ROS
+parameters by the launch file, so changing the ZeroMQ endpoint or the joypad
+override timeout is an edit and a restart rather than a rebuild. Details in
+[running in a container](doc/docker.md).
 
 ## Test
 
@@ -145,10 +202,25 @@ If only `40` appears, the second board still has its stock address: solder its
 
 ## Run
 
-Everything at once — joystick driver, remapper and servos:
+Everything at once — joystick driver, remapper, ZeroMQ bridge and servos:
+
+```sh
+ros2 launch hexapod_bridge hexapod.launch.py
+```
+
+Each part can be left out with `with_servos:=false`, `with_joypad:=false` or
+`with_bridge:=false`. The older joypad-only launch still exists:
 
 ```sh
 ros2 launch hexapod_joypad hexapod_joypad.launch.py
+```
+
+Sending poses from a workstation, with the sender that runs inside Maya or
+Blender:
+
+```sh
+python3 tools/hexapod_pose_sender.py --endpoint tcp://raspberrypi.local:5556
+ros2 topic echo /joint_command          # on the robot, to watch them arrive
 ```
 
 Without the hardware, on a development machine:
@@ -189,6 +261,7 @@ unpowered instead of holding their last command.
 |---|---|
 | `hexapod_msgs` | `JoypadButton`, `JoypadThumbstick`, `JoypadTrigger` |
 | `hexapod_joypad` | Remaps `sensor_msgs/msg/Joy` into those messages |
+| `hexapod_bridge` | Receives poses over ZeroMQ, arbitrates with the joypad |
 | `hexapod_servomotor` | Drives the servos through two PCA9685 boards |
 | `hexapod_description` | URDF model and meshes |
 
@@ -212,6 +285,9 @@ controller, follow [this guide](https://pimylifeup.com/raspberry-pi-playstation-
 | Document | Contents |
 |---|---|
 | [Setting up a Raspberry Pi](doc/raspberry-pi.md) | The install script, the supported image, I²C, build memory, troubleshooting |
+| [Running in a container](doc/docker.md) | The multistage image, compose, vcpkg, what the container is given |
+| [The ZeroMQ bridge](doc/zeromq-bridge.md) | The animation link, the joypad override, the message format, parameters |
+| [Maya and Blender transport](doc/maya-blender-bridge.md) | Why ZeroMQ rather than gRPC, and where the bridge belongs |
 | [The PCA9685 servo board](doc/pca9685.md) | PWM generation, registers, timing, wiring, driver validation |
 | [Configuring the robot](doc/configuration.md) | Node parameters, the Lua scripts, tuning, reading the logs |
 | [Architecture](doc/architecture.md) | Packages, topics, failure behaviour |

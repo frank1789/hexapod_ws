@@ -129,11 +129,24 @@ Intended data flow:
 joy_node (/joy, sensor_msgs/msg/Joy)
     → hexapod_joypad/controller_node   remaps raw PS3 values to semantic messages
     → hexapod_msgs on  joypad/button, joypad/thumbstick, joypad/trigger
+    → hexapod_bridge/hexapod_bridge    joypad freezes the stream; otherwise it forwards
+    ↑
+Maya/Blender → ZeroMQ (JSON, degrees) → hexapod_bridge
+    → sensor_msgs/msg/JointState on joint_command (radians)
     → hexapod_servomotor/servomotors_node   → PCA9685 ×2 over /dev/i2c-1
 ```
 
-**The last link is not connected.** `ServoController` never subscribes to the joypad topics, so the
-servo node only self-tests and homes. Wiring joypad → servos is unimplemented work, not a regression.
+**The chain is connected, but only from the ZeroMQ side.** `ServoController` subscribes to
+`joint_command` and writes whatever pose arrives. The joypad can only *freeze* that stream — it
+commands no angles of its own, because there is still no gait engine or inverse kinematic model in
+this workspace. A node that turns a thumbstick into eighteen joint angles is unimplemented work, not
+a regression; when it exists it publishes onto `joint_command` and needs no change to the bridge.
+
+Writing a pose is slow: `WriteOnMotor` sleeps `settle_time_ms` per motor, so eighteen joints take
+`18 × settle_time_ms` — 900 ms at the shipped default. The servo node therefore stores the newest
+pose and writes it on a `write_rate_hz` timer; a pose overtaken before the timer runs is never
+written. Any work on making the robot follow an animation smoothly starts there, not in the
+transport.
 
 ### Packages
 
@@ -144,6 +157,13 @@ servo node only self-tests and homes. Wiring joypad → servos is unimplemented 
   triggers to 0..1 and thumbsticks to Cartesian −1..1, adding magnitude/angle. The ROS 1
   `ps3joy` driver has no ROS 2 release — the generic `joy` node is used instead, reading the
   controller from `/dev/input/js<N>` once it is paired over Bluetooth.
+- **`hexapod_bridge`** — `BridgeNode` receives JSON poses over a ZeroMQ `SUB` socket opened with
+  `ZMQ_CONFLATE` (only the newest message survives, so a stalled link cannot make the robot replay
+  stale motion), validates every field, and republishes as `sensor_msgs/msg/JointState`. It also
+  subscribes to the joypad topics: any deliberate input freezes the stream until the joypad has been
+  quiet for `override_timeout_ms`. The wire format is degrees, `JointState` is radians — the
+  conversion happens here. `WireFormat` and `OverridePolicy` are free of ROS and of ZeroMQ so the
+  tests exercise them without opening a socket.
 - **`hexapod_servomotor`** — `ServoController` is an `rclcpp::Node` owning two
   `adafruit::PCA9685`: the `left_driver_address` board (default `0x40`) drives every motor whose name
   starts with `L`, `right_driver_address` (default `0x41`) drives the rest — `WriteOnMotor` dispatches

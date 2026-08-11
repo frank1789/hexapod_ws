@@ -19,6 +19,7 @@
   <depend>ament_index_cpp</depend>
   <depend>hexapod_msgs</depend>
   <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
 
   <!-- System dependencies: lua5.3 headers, sol2 and the i2c userspace library. -->
   <depend>liblua5.3-dev</depend>

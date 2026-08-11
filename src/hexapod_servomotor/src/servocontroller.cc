@@ -33,8 +33,13 @@
 #include <algorithm>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
+#include <cstddef>
+#include <numbers>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 #include "PCA9685_register.h"
 #include "utility_function.h"
@@ -48,6 +53,15 @@ constexpr int kReservedMotors{32};      /**< Reserved space for motors. */
 constexpr int kDefaultMotorsPerSide{9}; /**< Three legs per side, three joints per leg. */
 constexpr int kDefaultSettleMs{50};     /**< Time given to a servo to reach its target. */
 constexpr int kTestStepDegree{5};       /**< Sweep granularity of the startup test. */
+
+const std::string kDefaultCommandTopic{"joint_command"}; /**< Where poses arrive. */
+constexpr double kDefaultWriteRateHz{10.0};              /**< How often a pose is written. */
+
+/** @brief Only the newest pose matters, so the queue holds exactly one. */
+constexpr int kCommandQueueDepth{1};
+
+/** @brief How often a repeated complaint about a command may be logged, in ms. */
+constexpr int kLogThrottleMs{2000};
 
 }  // namespace
 
@@ -63,6 +77,17 @@ ServoController::ServoController() : rclcpp::Node("servomotors_node") {
   RegisterMotors();
   RestoreDefaultPosition();
 
+  // Subscribed only once the motors exist and the joints are at rest, so a pose
+  // arriving during start-up cannot be written against an empty motor table.
+  command_subscriber_ = create_subscription<sensor_msgs::msg::JointState>(
+      command_topic_, rclcpp::QoS(kCommandQueueDepth),
+      [this](const sensor_msgs::msg::JointState& command) { OnJointCommand(command); });
+
+  const auto write_period = std::chrono::duration<double>{1.0 / get_parameter("write_rate_hz").as_double()};
+  write_timer_ = create_wall_timer(std::chrono::duration_cast<std::chrono::milliseconds>(write_period),
+                                   [this]() { WritePendingPose(); });
+
+  RCLCPP_INFO(get_logger(), "listening for poses on %s", command_topic_.c_str());
   RCLCPP_INFO(get_logger(), "servomotors node ready with %zu motors", motors_.size());
   if (startup_test_) {
     RCLCPP_WARN(get_logger(),
@@ -116,6 +141,19 @@ void ServoController::DeclareParameters() {
     throw std::invalid_argument("settle_time_ms cannot be negative");
   }
   settle_time_ = std::chrono::milliseconds{settle_ms};
+
+  command_topic_ = declare_parameter<std::string>("command_topic", kDefaultCommandTopic);
+  if (command_topic_.empty()) {
+    throw std::invalid_argument("command_topic must not be empty");
+  }
+
+  // Writing a pose costs settle_time_ms per motor, so asking for more writes
+  // per second than the bus can deliver only queues work. The rate is capped
+  // against the time a full pose actually takes.
+  const auto write_rate_hz = declare_parameter<double>("write_rate_hz", kDefaultWriteRateHz);
+  if (write_rate_hz <= 0.0) {
+    throw std::invalid_argument("write_rate_hz must be greater than zero");
+  }
 
   startup_test_ = declare_parameter<bool>("perform_startup_test", false);
   motors_script_ = declare_parameter<std::string>("motors_script", "motors.lua");
@@ -257,6 +295,89 @@ void ServoController::WriteOnMotor(const Motor& t_motor) {
 
   driver.SetSinglePWM(t_motor.GetPinMotor(), 0, PulseWidth(t_motor.GetAngle()));
   std::this_thread::sleep_for(settle_time_);
+}
+
+Motor* ServoController::FindMotor(const std::string& t_name) {
+  // Eighteen motors: a linear scan costs less than the map that would avoid it.
+  for (auto& motor : motors_) {
+    if (motor.GetNameMotor() == t_name) {
+      return &motor;
+    }
+  }
+  return nullptr;
+}
+
+void ServoController::OnJointCommand(const sensor_msgs::msg::JointState& t_command) {
+  // JointState carries the two arrays independently, so nothing but this check
+  // stops a truncated message from pairing an angle with the wrong joint.
+  if (t_command.name.size() != t_command.position.size()) {
+    ++rejected_commands_;
+    RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
+                          "rejected a command with %zu names against %zu positions (%lu refused so far)",
+                          t_command.name.size(), t_command.position.size(),
+                          static_cast<unsigned long>(rejected_commands_));
+    return;
+  }
+
+  if (t_command.name.empty()) {
+    ++rejected_commands_;
+    RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
+                          "rejected an empty command, there is nothing to move (%lu refused so far)",
+                          static_cast<unsigned long>(rejected_commands_));
+    return;
+  }
+
+  // Built into the pending buffers only after the whole message has been
+  // accepted, so a bad command never half-overwrites a good pose.
+  std::vector<std::string> names;
+  std::vector<double> degrees;
+  names.reserve(t_command.name.size());
+  degrees.reserve(t_command.position.size());
+
+  for (std::size_t index = 0; index < t_command.name.size(); ++index) {
+    const auto degree = t_command.position[index] * 180.0 / std::numbers::pi;
+    if (!std::isfinite(degree)) {
+      ++rejected_commands_;
+      RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
+                            "rejected a command: joint %s carries a non-finite angle (%lu refused so far)",
+                            t_command.name[index].c_str(), static_cast<unsigned long>(rejected_commands_));
+      return;
+    }
+    names.push_back(t_command.name[index]);
+    degrees.push_back(degree);
+  }
+
+  pending_names_ = std::move(names);
+  pending_degrees_ = std::move(degrees);
+}
+
+void ServoController::WritePendingPose() {
+  if (pending_names_.empty()) {
+    return;
+  }
+
+  // Taken by move: a pose is written once. Holding it would make the timer
+  // rewrite the same angles for ever, keeping the I2C bus busy for nothing.
+  const auto names = std::move(pending_names_);
+  const auto degrees = std::move(pending_degrees_);
+  pending_names_.clear();
+  pending_degrees_.clear();
+
+  for (std::size_t index = 0; index < names.size(); ++index) {
+    auto* motor = FindMotor(names[index]);
+    if (motor == nullptr) {
+      // The sender and motors.lua disagree. Say so rather than moving a joint
+      // that happens to sit at the same position in some other ordering.
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), kLogThrottleMs,
+                           "no motor is called %s, the command for it was ignored", names[index].c_str());
+      continue;
+    }
+
+    // SetAngle clamps to the mechanical range, and PulseWidth clamps again
+    // before anything reaches the board.
+    motor->SetAngle(degrees[index]);
+    WriteOnMotor(*motor);
+  }
 }
 
 std::uint16_t ServoController::PulseWidth(const double t_angle) const {

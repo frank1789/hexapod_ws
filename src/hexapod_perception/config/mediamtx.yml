@@ -1,0 +1,81 @@
+# RTSP server for the two camera streams.
+#
+#   rtsp://<pi>:8554/color     what the camera sees
+#   rtsp://<pi>:8554/depth     the depth map, as a JET heatmap
+#
+# RTSP is what Frigate and Home Assistant consume. HLS and WebRTC are served
+# from the same source for a browser, which is the quickest way to check the
+# robot is seeing what you think it is without installing anything.
+#
+# Nothing is encoded until somebody asks for it. `runOnDemand` starts the
+# command on the first viewer and `runOnDemandCloseAfter` stops it once the
+# last one leaves, which on a four-core Pi already running the robot is the
+# difference between a stream that is free and one that is not: a single
+# 640x480 stream costs about a core between the bridge and the encoder.
+#
+# The commands are `hexapod-stream`, the wrapper docker/ installs on the PATH.
+# It is a command name rather than a path on purpose - where the workspace is
+# installed is the image's business, and does not belong in a ROS config file.
+# MediaMTX splits these on whitespace and runs them directly, without a shell,
+# so there is nothing here to quote.
+
+logLevel: info
+
+# RTSP - Frigate, Home Assistant, VLC, ffmpeg.
+rtsp: yes
+rtspAddress: :8554
+rtspTransports: [tcp]
+
+# HLS - plays anywhere, including Safari and iOS, at the cost of latency.
+hls: yes
+hlsAddress: :8888
+hlsVariant: lowLatency
+
+# WebRTC - lowest latency in a browser, no plugin. Note that decoding a stream
+# in a browser *on the Pi itself* costs more CPU than producing it; watch from
+# another machine when the robot is busy.
+webrtc: yes
+webrtcAddress: :8889
+
+# None of these is used here, and a port that listens for nothing is a port to
+# explain later.
+rtmp: no
+srt: no
+
+# MoQ defaults to on, and it is not merely unused: it generates a TLS keypair at
+# startup and writes it to `auto.key` and `auto.crt` — relative paths, so into
+# the working directory, which is /opt/hexapod and which the container's user
+# cannot write to. MediaMTX does not carry on without it; it takes the WebRTC
+# and HLS listeners down with it and exits. Left on, the whole server dies at
+# startup with `permission denied` several lines above the failure it causes.
+moq: no
+
+# runOnDemandStartTimeout is well above the default ten seconds because the
+# command is a ROS node: rclpy alone takes about three seconds to come up on a
+# Pi 4, and only then does it wait for a frame, start ffmpeg and let ffmpeg
+# connect back. Ten seconds is enough right up until the machine is busy, which
+# is exactly when somebody opens the stream to see what the robot is doing.
+paths:
+  color:
+    runOnDemand: >-
+      hexapod-stream
+      --topic /d455/color/image_raw
+      --rtsp rtsp://localhost:8554/color
+      --bitrate 2M
+    runOnDemandRestart: yes
+    runOnDemandStartTimeout: 20s
+    runOnDemandCloseAfter: 10s
+
+  # False colour compresses far worse than a photograph does - the speckle of
+  # unresolved pixels changes every frame and defeats inter-frame prediction.
+  # Measured on this camera, the same four seconds cost eleven times as much as
+  # the colour stream, hence the higher ceiling here.
+  depth:
+    runOnDemand: >-
+      hexapod-stream
+      --topic /d455/depth/image_rect_raw
+      --rtsp rtsp://localhost:8554/depth
+      --bitrate 4M
+    runOnDemandRestart: yes
+    runOnDemandStartTimeout: 20s
+    runOnDemandCloseAfter: 10s

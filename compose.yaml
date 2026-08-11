@@ -1,0 +1,215 @@
+# Running the hexapod on a Raspberry Pi 4B or 5.
+#
+#   docker compose up -d --build       # the robot
+#   docker compose --profile dry up    # no hardware
+#
+# This file sits at the root of the workspace under one of the names compose
+# looks for by itself, so no -f is needed. The Dockerfile and the entrypoint
+# stay in docker/; the build context is the workspace, because the image copies
+# src/ and vcpkg.json from it.
+#
+# Configuration is here rather than baked into the image: every value below is
+# an environment variable the launch file turns into a ROS parameter override,
+# so changing the endpoint or the override timeout is an edit and a restart, not
+# a rebuild. Defaults live in src/hexapod_bridge/config/bridge.yaml.
+
+services:
+  hexapod:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    image: hexapod:${HEXAPOD_TAG:-latest}
+    container_name: hexapod
+
+    # The joints must not be left mid-pose because a process died.
+    restart: unless-stopped
+
+    # The hardware — two PCA9685 boards, a joystick, a RealSense camera — is on
+    # the host, and any of it may be absent. That rules out `devices:`, which is
+    # not a request but a preflight condition:
+    #
+    #   $ docker run --device /dev/video99 ...
+    #   error gathering device information while adding custom device
+    #   "/dev/video99": no such file or directory
+    #
+    # One unplugged camera and the container refuses to be created at all. So
+    # /dev is bind-mounted instead, which also means a device plugged in later
+    # appears inside a container that is already running — verified by creating
+    # a node on the host and finding it in the container without a restart.
+    #
+    # Seeing a node is not being allowed to open it. Access is decided by
+    # device_cgroup_rules below, and everything outside them is refused even to
+    # root: /dev/mem is visible in this container and answers "Operation not
+    # permitted". The reach stays as narrow as it was with `devices:`, while the
+    # container starts with whatever happens to be attached.
+    volumes:
+      - /dev:/dev
+    # The device nodes belong to host groups, and the image's user is not in
+    # them: without this the container opens /dev/i2c-1 as nobody and every
+    # write fails with EACCES. Only the numeric GID crosses into the container,
+    # where it may carry a different name — 994 is i2c on this Pi and render
+    # inside the image, which is harmless, the kernel checks the number.
+    #
+    # The defaults are the GIDs of this Pi; `getent group i2c input video` on
+    # another host may print others, hence the overrides.
+    group_add:
+      - "${HEXAPOD_I2C_GID:-994}"    # i2c, for the PCA9685 boards
+      - "${HEXAPOD_INPUT_GID:-102}"  # input, for the joystick
+      - "${HEXAPOD_VIDEO_GID:-44}"   # video, for the RealSense camera
+    # This list is now the whole access policy, so it has to be complete: with
+    # `devices:` gone, nothing adds a rule implicitly any more. Each class is
+    # matched as a whole because the minor numbers move — the joystick's when it
+    # is re-paired, the camera's when it is replugged.
+    device_cgroup_rules:
+      - "c 89:* rmw"   # /dev/i2c-*, the two PCA9685 boards
+      - "c 13:* rmw"   # /dev/input/*, the joystick
+      - "c 81:* rmw"   # /dev/video*, the RealSense D455
+      - "c 189:* rmw"  # /dev/bus/usb/*, the RealSense control channel
+
+    # One switch per piece of hardware, so a missing board or an unplugged
+    # camera is a choice rather than a wall of respawn errors:
+    #
+    #   HEXAPOD_WITH_SERVOS=false docker compose up -d   # boards not wired
+    #   HEXAPOD_WITH_CAMERA=true  docker compose up -d   # D455 attached
+    #
+    #   # camera on and streaming to Frigate, Home Assistant or a browser
+    #   HEXAPOD_WITH_CAMERA=true HEXAPOD_WITH_STREAMING=true docker compose up -d
+    #
+    # The defaults match the launch file: servos, joypad and bridge on, camera
+    # and streaming off. The camera is the one part whose absence is the normal
+    # case, and it costs USB bandwidth and CPU the rest of the stack would
+    # rather have. Streaming needs the camera; on its own it serves paths whose
+    # topics nobody publishes.
+    #
+    # These are baked into the container at creation, not read at each start —
+    # `docker compose up -d` with a different value recreates it, a reboot does
+    # not. Whatever was set last is what comes back.
+    command:
+      - ros2
+      - launch
+      - hexapod_bridge
+      - hexapod.launch.py
+      - "with_servos:=${HEXAPOD_WITH_SERVOS:-true}"
+      - "with_joypad:=${HEXAPOD_WITH_JOYPAD:-true}"
+      - "with_bridge:=${HEXAPOD_WITH_BRIDGE:-true}"
+      - "with_camera:=${HEXAPOD_WITH_CAMERA:-false}"
+      - "with_streaming:=${HEXAPOD_WITH_STREAMING:-false}"
+
+    # 5556 is the ZeroMQ endpoint the bridge binds for the animation package.
+    # The other three are the camera, and they listen whether or not anything is
+    # streaming: MediaMTX encodes on demand, so an unused port here costs a
+    # listening socket and nothing else.
+    #
+    #   rtsp://<pi>:8554/color    rtsp://<pi>:8554/depth     Frigate, HA, VLC
+    #   http://<pi>:8889/color/                              browser, WebRTC
+    #   http://<pi>:8888/color/index.m3u8                    browser, HLS
+    ports:
+      - "${HEXAPOD_BRIDGE_PORT:-5556}:5556"
+      - "${HEXAPOD_RTSP_PORT:-8554}:8554"
+      - "${HEXAPOD_HLS_PORT:-8888}:8888"
+      - "${HEXAPOD_WEBRTC_PORT:-8889}:8889"
+
+    environment:
+      # --- ZeroMQ bridge ---------------------------------------------------
+      # 0.0.0.0 so the socket answers on every interface of the Pi. The port
+      # here is the one inside the container; change the mapping above to move
+      # the one outside it.
+      HEXAPOD_BRIDGE_ENDPOINT: "tcp://0.0.0.0:5556"
+      HEXAPOD_BRIDGE_BIND: "true"
+      HEXAPOD_BRIDGE_OUTPUT_TOPIC: "joint_command"
+      HEXAPOD_BRIDGE_POLL_PERIOD_MS: "5"
+
+      # How long after letting go of the joypad the streamed poses take over
+      # again. Holding the joypad freezes the joints.
+      HEXAPOD_BRIDGE_OVERRIDE_TIMEOUT_MS: "1500"
+      HEXAPOD_BRIDGE_THUMBSTICK_DEADZONE: "0.25"
+
+      # --- camera streaming ------------------------------------------------
+      # Read by the streaming node; see src/hexapod_perception/scripts/.
+      #
+      # libx264 is the default because it always works. h264_v4l2m2m hands the
+      # job to the Pi 4 hardware encoder for roughly a quarter of the CPU, but
+      # there is one of it: two streams contend, and a process killed mid-encode
+      # can leave the device wedged until the module is reloaded. The Pi 5 has
+      # no such encoder at all.
+      HEXAPOD_STREAM_ENCODER: "${HEXAPOD_STREAM_ENCODER:-libx264}"
+
+      # The window the depth heatmap spans, in metres. Everything nearer than
+      # the minimum or further than the maximum saturates at the end of the
+      # colour ramp; pixels the camera could not resolve stay black. Narrow it
+      # and near objects separate more clearly.
+      HEXAPOD_STREAM_DEPTH_MIN_M: "0.3"
+      HEXAPOD_STREAM_DEPTH_MAX_M: "4.0"
+
+      # --- ROS -------------------------------------------------------------
+      # DDS stays inside the container: the only traffic that crosses the
+      # network is the ZeroMQ link, which is unicast and behaves over WiFi.
+      # ROS_LOCALHOST_ONLY did this before Jazzy and now warns on every start.
+      ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-0}"
+      RCUTILS_COLORIZED_OUTPUT: "1"
+
+    # Shared memory for the DDS transport; the default 64 MB is tight.
+    shm_size: "256m"
+
+    healthcheck:
+      # The bridge is alive if its topic is being advertised. This checks the
+      # ROS graph, not just that the process has not exited.
+      #
+      # The check does not go through entrypoint.sh, so it has to source ROS
+      # itself: without that the shell reports "ros2: not found" and the
+      # container is marked unhealthy however well the bridge is running. The
+      # $$ keeps the variable for the container's shell instead of letting
+      # compose interpolate it from the host environment.
+      #
+      # --no-daemon is required, not a preference: the daemon answers from a
+      # cache populated before the nodes finished starting, and lists only
+      # /rosout and /parameter_events. It also leaves a process behind on every
+      # probe.
+      #
+      # --spin-time only applies without the daemon, and its default of one
+      # second is not enough on a loaded Pi: two probes out of five came back
+      # empty and the container flapped. Five seconds passed six times out of
+      # six, at about eleven seconds a probe — hence the wider timeout and the
+      # longer interval, which also keeps a ten-second Python start-up from
+      # running a third of the time.
+      #
+      # grep without -q reads the stream to the end. With -q it exits on the
+      # first match and ros2 dies of SIGPIPE, printing a BrokenPipeError
+      # traceback into the health log for what is a passing check.
+      test:
+        - "CMD-SHELL"
+        - ". /opt/ros/$$ROS_DISTRO/setup.sh && ros2 topic list --no-daemon --spin-time 5 | grep joint_command >/dev/null"
+      interval: 60s
+      timeout: 25s
+      start_period: 40s
+      retries: 3
+
+  # Everything except the I2C hardware, for a workstation or a Pi with nothing
+  # wired to it yet. Same image, different launch arguments.
+  hexapod-dry:
+    profiles: ["dry"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    image: hexapod:${HEXAPOD_TAG:-latest}
+    container_name: hexapod-dry
+    restart: "no"
+    ports:
+      - "${HEXAPOD_BRIDGE_PORT:-5556}:5556"
+    environment:
+      HEXAPOD_BRIDGE_ENDPOINT: "tcp://0.0.0.0:5556"
+      HEXAPOD_BRIDGE_BIND: "true"
+      ROS_AUTOMATIC_DISCOVERY_RANGE: "LOCALHOST"
+    shm_size: "256m"
+    command:
+      - ros2
+      - launch
+      - hexapod_bridge
+      - hexapod.launch.py
+      - "with_servos:=false"
+      - "with_joypad:=false"

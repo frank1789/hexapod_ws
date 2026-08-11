@@ -1,42 +1,85 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 260" width="760" height="260" role="img"
-     aria-label="Data flow: the joy node publishes Joy messages, the controller node republishes them as hexapod messages, and the servomotor node drives the PCA9685 boards">
-  <rect x="0" y="0" width="760" height="260" fill="#ffffff"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" width="900" height="400" role="img"
+     aria-label="Node interaction: the joy node publishes Joy messages to the controller node, which republishes them as hexapod messages; Maya or Blender sends poses over ZeroMQ to the bridge node, which arbitrates between the two and publishes JointState on joint_command to the servomotor node, which drives two PCA9685 boards over I2C">
+  <rect x="0" y="0" width="900" height="400" fill="#ffffff"/>
   <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
 
-    <text x="16" y="26" font-size="15" font-weight="bold">From the joypad to the joints</text>
+    <text x="16" y="26" font-size="15" font-weight="bold">How the nodes interact</text>
 
-    <rect x="20" y="60" width="140" height="70" rx="6" fill="#eef2f6" stroke="#57606a"/>
-    <text x="90" y="88" text-anchor="middle" font-weight="bold">joy_node</text>
-    <text x="90" y="108" text-anchor="middle" fill="#57606a">/dev/input/js0</text>
+    <!-- ================= workstation ================= -->
+    <rect x="16" y="44" width="250" height="96" rx="8" fill="#fbfdff" stroke="#8b949e" stroke-dasharray="5 3"/>
+    <text x="28" y="62" font-size="11" fill="#57606a">workstation</text>
 
-    <line x1="160" y1="95" x2="230" y2="95" stroke="#0969da" stroke-width="2"/>
-    <polygon points="230,95 222,91 222,99" fill="#0969da"/>
-    <text x="195" y="86" text-anchor="middle" font-size="11" fill="#0969da">/joy</text>
+    <rect x="32" y="72" width="218" height="54" rx="6" fill="#fff8e6" stroke="#9a6700"/>
+    <text x="141" y="94" text-anchor="middle" font-weight="bold">Maya / Blender</text>
+    <text x="141" y="112" text-anchor="middle" font-size="11" fill="#57606a">hexapod_pose_sender.py</text>
 
-    <rect x="230" y="60" width="160" height="70" rx="6" fill="#eef2f6" stroke="#57606a"/>
-    <text x="310" y="88" text-anchor="middle" font-weight="bold">controller_node</text>
-    <text x="310" y="108" text-anchor="middle" fill="#57606a">hexapod_joypad</text>
+    <!-- ZeroMQ hop -->
+    <line x1="266" y1="99" x2="392" y2="99" stroke="#8250df" stroke-width="2"/>
+    <polygon points="392,99 384,95 384,103" fill="#8250df"/>
+    <text x="329" y="88" text-anchor="middle" font-size="11" fill="#8250df" font-weight="bold">ZeroMQ</text>
+    <text x="329" y="117" text-anchor="middle" font-size="10" fill="#8250df">JSON, degrees, conflate</text>
 
-    <line x1="390" y1="95" x2="460" y2="95" stroke="#0969da" stroke-width="2"/>
-    <polygon points="460,95 452,91 452,99" fill="#0969da"/>
+    <!-- ================= robot ================= -->
+    <rect x="392" y="44" width="492" height="330" rx="8" fill="#fbfdff" stroke="#8b949e" stroke-dasharray="5 3"/>
+    <text x="404" y="62" font-size="11" fill="#57606a">Raspberry Pi &#8212; DDS never leaves this box</text>
 
-    <rect x="460" y="52" width="270" height="86" rx="6" fill="#f6f8fa" stroke="#8b949e" stroke-dasharray="4 3"/>
-    <text x="595" y="72" text-anchor="middle" font-size="11" fill="#57606a">hexapod_msgs</text>
-    <text x="595" y="92" text-anchor="middle" font-size="12">joypad/button</text>
-    <text x="595" y="110" text-anchor="middle" font-size="12">joypad/thumbstick</text>
-    <text x="595" y="128" text-anchor="middle" font-size="12">joypad/trigger</text>
+    <!-- bridge -->
+    <rect x="410" y="72" width="200" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="510" y="98" text-anchor="middle" font-weight="bold">hexapod_bridge</text>
+    <text x="510" y="118" text-anchor="middle" font-size="11" fill="#57606a">validates, arbitrates</text>
 
-    <!-- not yet connected -->
-    <line x1="595" y1="138" x2="595" y2="180" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
-    <polygon points="595,180 591,172 599,172" fill="#cf222e"/>
-    <text x="612" y="166" font-size="11" fill="#cf222e">not connected yet</text>
+    <!-- joy chain -->
+    <rect x="20" y="196" width="130" height="60" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="85" y="222" text-anchor="middle" font-weight="bold">joy_node</text>
+    <text x="85" y="240" text-anchor="middle" font-size="11" fill="#57606a">/dev/input/js0</text>
 
-    <rect x="460" y="180" width="270" height="60" rx="6" fill="#eef2f6" stroke="#57606a"/>
-    <text x="595" y="205" text-anchor="middle" font-weight="bold">servomotors_node</text>
-    <text x="595" y="225" text-anchor="middle" fill="#57606a">two PCA9685 boards over I2C</text>
+    <line x1="150" y1="226" x2="212" y2="226" stroke="#0969da" stroke-width="2"/>
+    <polygon points="212,226 204,222 204,230" fill="#0969da"/>
+    <text x="181" y="218" text-anchor="middle" font-size="10" fill="#0969da">/joy</text>
 
-    <rect x="20" y="180" width="370" height="60" rx="6" fill="#fff8c5" stroke="#9a6700"/>
-    <text x="205" y="203" text-anchor="middle" font-size="12" fill="#9a6700">The servo node currently only homes the joints:</text>
-    <text x="205" y="223" text-anchor="middle" font-size="12" fill="#9a6700">it does not subscribe to the joypad topics.</text>
+    <rect x="212" y="196" width="150" height="60" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="287" y="222" text-anchor="middle" font-weight="bold">controller_node</text>
+    <text x="287" y="240" text-anchor="middle" font-size="11" fill="#57606a">hexapod_joypad</text>
+
+    <!-- joypad topics into the bridge -->
+    <path d="M362 226 L470 226 L470 138" fill="none" stroke="#0969da" stroke-width="2"/>
+    <polygon points="470,138 466,146 474,146" fill="#0969da"/>
+    <text x="416" y="218" text-anchor="middle" font-size="10" fill="#0969da">joypad/button</text>
+    <text x="416" y="243" text-anchor="middle" font-size="10" fill="#0969da">joypad/thumbstick</text>
+
+    <!-- override callout -->
+    <rect x="620" y="76" width="248" height="58" rx="6" fill="#fff5f5" stroke="#cf222e"/>
+    <text x="744" y="97" text-anchor="middle" font-size="11" fill="#cf222e" font-weight="bold">joypad wins</text>
+    <text x="744" y="115" text-anchor="middle" font-size="10" fill="#cf222e">touching it freezes the joints</text>
+    <line x1="610" y1="105" x2="620" y2="105" stroke="#cf222e" stroke-width="2"/>
+
+    <!-- joint_command -->
+    <line x1="510" y1="138" x2="510" y2="212" stroke="#0969da" stroke-width="2"/>
+    <polygon points="510,212 506,204 514,204" fill="#0969da"/>
+    <text x="522" y="163" font-size="11" fill="#0969da">joint_command</text>
+    <text x="522" y="180" font-size="10" fill="#57606a">sensor_msgs/JointState</text>
+    <text x="522" y="196" font-size="10" fill="#57606a">radians</text>
+
+    <!-- servomotor -->
+    <rect x="410" y="212" width="200" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="510" y="238" text-anchor="middle" font-weight="bold">servomotors_node</text>
+    <text x="510" y="258" text-anchor="middle" font-size="11" fill="#57606a">hexapod_servomotor</text>
+
+    <!-- i2c -->
+    <line x1="510" y1="278" x2="510" y2="316" stroke="#1a7f37" stroke-width="2"/>
+    <polygon points="510,316 506,308 514,308" fill="#1a7f37"/>
+    <text x="522" y="300" font-size="10" fill="#1a7f37">/dev/i2c-1</text>
+
+    <rect x="410" y="316" width="96" height="44" rx="6" fill="#eaf6ec" stroke="#1a7f37"/>
+    <text x="458" y="336" text-anchor="middle" font-size="11" font-weight="bold">PCA9685</text>
+    <text x="458" y="351" text-anchor="middle" font-size="10" fill="#57606a">0x40 &#183; left</text>
+
+    <rect x="514" y="316" width="96" height="44" rx="6" fill="#eaf6ec" stroke="#1a7f37"/>
+    <text x="562" y="336" text-anchor="middle" font-size="11" font-weight="bold">PCA9685</text>
+    <text x="562" y="351" text-anchor="middle" font-size="10" fill="#57606a">0x41 &#183; right</text>
+
+    <text x="628" y="338" font-size="11" fill="#57606a">18 servos</text>
+    <text x="628" y="354" font-size="10" fill="#57606a">9 per side, 0&#8211;180&#176;</text>
+
   </g>
 </svg>

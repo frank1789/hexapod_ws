@@ -34,6 +34,7 @@
 #include <chrono>
 #include <cstdint>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <string>
 #include <vector>
 
@@ -128,6 +129,34 @@ class ServoController : public rclcpp::Node {
   void WriteOnMotor(const Motor& t_motor);
 
   /**
+   * @brief Take in a commanded pose and remember it for the next write.
+   *
+   * The message is not written to the boards here. Writing a whole pose costs
+   * `settle_time_ms` per motor, which is far longer than the interval between
+   * two commands, so a callback that wrote straight to the I2C bus would fall
+   * ever further behind the stream. The pose is stored instead and the timer
+   * writes whatever is current when it next runs; a pose that is overtaken
+   * before then is simply never written, which is the right answer for a robot.
+   *
+   * A joint the motor table does not know is reported and skipped rather than
+   * silently ignored: it means the sender and `motors.lua` disagree.
+   *
+   * @param t_command joint names with their angles in radians
+   */
+  void OnJointCommand(const sensor_msgs::msg::JointState& t_command);
+
+  /** @brief Write the pose stored by the last command, if there is a new one. */
+  void WritePendingPose();
+
+  /**
+   * @brief Find a motor by name.
+   *
+   * @param t_name motor name as it appears in `motors.lua`
+   * @return pointer to the motor, or nullptr when the name is unknown
+   */
+  [[nodiscard]] Motor* FindMotor(const std::string& t_name);
+
+  /**
    * @brief Convert an angle into a value of the 12-bit PWM counter.
    *
    * The angle is clamped to `[0, 180]` degrees and mapped onto the configured
@@ -162,12 +191,23 @@ class ServoController : public rclcpp::Node {
   // Declared largest first so the node carries no avoidable padding: the two
   // boards, then the interpreter, the strings, the vector, and finally the
   // scalars in decreasing width.
-  sol::state lua_;                           /**< Lua interpreter used for the configuration. */
-  std::string config_directory_;             /**< Where the Lua scripts were installed. */
-  std::string i2c_bus_;                      /**< Path of the I2C bus. */
-  std::string motors_script_;                /**< File name of the motor table script. */
-  std::string homing_script_;                /**< File name of the rest position script. */
-  std::vector<Motor> motors_;                /**< Motors described by the motor table script. */
+  sol::state lua_;                         /**< Lua interpreter used for the configuration. */
+  std::string config_directory_;           /**< Where the Lua scripts were installed. */
+  std::string i2c_bus_;                    /**< Path of the I2C bus. */
+  std::string motors_script_;              /**< File name of the motor table script. */
+  std::string homing_script_;              /**< File name of the rest position script. */
+  std::string command_topic_;              /**< Topic the commanded poses arrive on. */
+  std::vector<Motor> motors_;              /**< Motors described by the motor table script. */
+  std::vector<std::string> pending_names_; /**< Joints of the pose waiting to be written. */
+  std::vector<double> pending_degrees_;    /**< Angles of that pose, in degrees. */
+
+  /** @brief Commanded poses, kept at a depth of one so only the newest survives. */
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr command_subscriber_;
+
+  /** @brief Drives the writes, decoupling the I2C bus from the arrival rate. */
+  rclcpp::TimerBase::SharedPtr write_timer_;
+
+  std::uint64_t rejected_commands_{0};       /**< Commands refused, for reporting. */
   double frequency_{0.0};                    /**< Requested PWM frequency, in hertz. */
   double min_pulse_us_{0.0};                 /**< Pulse width for 0 degrees, in microseconds. */
   double max_pulse_us_{0.0};                 /**< Pulse width for 180 degrees, in microseconds. */

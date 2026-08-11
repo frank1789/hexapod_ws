@@ -1,0 +1,179 @@
+# syntax=docker/dockerfile:1
+#
+# Runtime image for hexapod_ws on a Raspberry Pi 4 Model B or a Raspberry Pi 5.
+#
+# Two stages: the first builds the workspace, the second carries only what is
+# needed to run it. The compiler, vcpkg, the sources and the object files stay
+# behind in the builder, so the image that ships to the robot is a fraction of
+# the size.
+#
+#   docker build -f docker/Dockerfile -t hexapod:latest .
+#   docker buildx build --platform linux/arm64 -f docker/Dockerfile -t hexapod:latest .
+#
+# Every version-specific value is an ARG: upgrading ROS is one line here or one
+# line in compose.yaml, and nothing below hard-codes a distribution.
+
+ARG ROS_DISTRO=jazzy
+
+# ----------------------------------------------------------------- build stage
+FROM ros:${ROS_DISTRO}-ros-base AS builder
+
+ARG ROS_DISTRO
+ARG VCPKG_REF=2026.07.29
+
+# vcpkg owns fmt, ZeroMQ, cppzmq, Eigen and nlohmann-json — see vcpkg.json at
+# the root of the workspace. It builds them from source, which on arm64 is the
+# only option anyway; paid once here and cached in this layer, it costs nothing
+# on a rebuild that only touches the robot's own sources.
+ENV VCPKG_ROOT=/opt/vcpkg \
+    VCPKG_INSTALLED=/opt/vcpkg_installed \
+    VCPKG_DISABLE_METRICS=1 \
+    VCPKG_FORCE_SYSTEM_BINARIES=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# curl, zip, unzip and tar are vcpkg's own requirements; the rest is what the
+# workspace needs to compile. liblua5.3-dev carries lua.h, which
+# find_package(Lua 5.3 REQUIRED) needs and the interpreter package does not.
+# cmake is installed from Kitware's APT repository to get the latest version.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+    && curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor -o /usr/share/keyrings/kitware-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/kitware.list >/dev/null \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        cmake \
+        git \
+        libi2c-dev \
+        liblua5.3-dev \
+        lua5.3 \
+        ninja-build \
+        pkg-config \
+        python3-pip \
+        tar \
+        unzip \
+        zip \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 --branch "${VCPKG_REF}" https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}" \
+    && "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
+
+# Only the manifest is copied first, so editing a source file does not throw
+# away the hours of third-party compilation cached in this layer.
+WORKDIR /ws
+COPY vcpkg.json /ws/vcpkg.json
+
+# The triplet follows the architecture of the machine doing the build, which is
+# what makes the same Dockerfile work on arm64 and on an x86 workstation.
+RUN VCPKG_TRIPLET="$(uname -m | sed 's/aarch64/arm64-linux/; s/x86_64/x64-linux/')" \
+    && echo "${VCPKG_TRIPLET}" > /opt/vcpkg_triplet \
+    && "${VCPKG_ROOT}/vcpkg" install \
+        --x-manifest-root=/ws \
+        --x-install-root="${VCPKG_INSTALLED}" \
+        --triplet "${VCPKG_TRIPLET}" \
+        --clean-after-build
+
+COPY src /ws/src
+
+# VCPKG_MANIFEST_MODE is off on purpose: the manifest was already resolved
+# above, once, for the whole workspace. Left on, every colcon package would try
+# to resolve it again for itself.
+#
+# clang-tidy is not run here. It runs in the dev container, where it is part of
+# the compilation; a release image should not fail to build over a lint finding.
+RUN VCPKG_TRIPLET="$(cat /opt/vcpkg_triplet)" \
+    && source "/opt/ros/${ROS_DISTRO}/setup.bash" \
+    && colcon build \
+        --merge-install \
+        --cmake-args \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DHEXAPOD_ENABLE_CLANG_TIDY=OFF \
+            -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_MANIFEST_MODE=OFF \
+            -DVCPKG_INSTALLED_DIR="${VCPKG_INSTALLED}" \
+            -DVCPKG_TARGET_TRIPLET="${VCPKG_TRIPLET}"
+
+# --------------------------------------------------------------- runtime stage
+FROM ros:${ROS_DISTRO}-ros-base AS runtime
+
+ARG ROS_DISTRO
+ARG MEDIAMTX_VERSION=1.20.0
+ENV ROS_DISTRO=${ROS_DISTRO} \
+    DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+# Runtime libraries only, no -dev packages. vcpkg links fmt, ZeroMQ and the rest
+# statically, so they need nothing here; Lua and I2C come from the distribution
+# and do.
+#
+# i2c-tools is kept deliberately: when a joint does not move, the first question
+# is whether the boards answer, and answering it inside the container beats
+# guessing from outside it.
+#
+# ffmpeg, numpy and OpenCV are the RTSP streaming path. The last two arrive
+# anyway as dependencies of realsense2_camera, and are named here because a
+# feature that breaks when an unrelated package drops a dependency is a feature
+# that breaks for reasons nobody will look for.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        ffmpeg \
+        i2c-tools \
+        libi2c0 \
+        liblua5.3-0 \
+        python3-numpy \
+        python3-opencv \
+        ros-${ROS_DISTRO}-joy \
+        ros-${ROS_DISTRO}-robot-state-publisher \
+        ros-${ROS_DISTRO}-realsense2-camera \
+        ros-${ROS_DISTRO}-realsense2-description \
+    && rm -rf /var/lib/apt/lists/*
+
+# MediaMTX is the RTSP server. It ships as one static binary with no packaging
+# in any distribution, so it is fetched by pinned version rather than installed;
+# the architecture suffix follows the build machine, the way the vcpkg triplet
+# does in the builder stage.
+RUN MEDIAMTX_ARCH="$(uname -m | sed 's/aarch64/arm64/; s/x86_64/amd64/')" \
+    && curl -fsSL -o /tmp/mediamtx.tar.gz \
+        "https://github.com/bluenviron/mediamtx/releases/download/v${MEDIAMTX_VERSION}/mediamtx_v${MEDIAMTX_VERSION}_linux_${MEDIAMTX_ARCH}.tar.gz" \
+    && tar -xzf /tmp/mediamtx.tar.gz -C /usr/local/bin mediamtx \
+    && chmod 0755 /usr/local/bin/mediamtx \
+    && rm -f /tmp/mediamtx.tar.gz \
+    && mediamtx --version
+
+COPY --from=builder /ws/install /opt/hexapod
+COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=0755 docker/hexapod-stream.sh /usr/local/bin/hexapod-stream
+
+# The container runs as a normal user in the i2c, input, and video groups. Root
+# would work, but a process that can reach every device on the bus is not what
+# should be listening on a network port.
+ARG USERNAME=hexapod
+ARG USER_UID=1000
+ARG USER_GID=1000
+RUN if getent passwd ${USER_UID} >/dev/null; then \
+        userdel -r "$(getent passwd ${USER_UID} | cut -d: -f1)" 2>/dev/null || true; \
+    fi \
+    && groupadd --gid ${USER_GID} ${USERNAME} \
+    && useradd --uid ${USER_UID} --gid ${USER_GID} --create-home --shell /bin/bash ${USERNAME} \
+    && groupadd -f i2c \
+    && groupadd -f input \
+    && groupadd -f video \
+    && usermod -aG i2c,input,video ${USERNAME}
+
+USER ${USERNAME}
+WORKDIR /opt/hexapod
+
+# The ZeroMQ endpoint the bridge binds, and the three ways the camera streams
+# leave the container. Publishing any of them is compose's business.
+EXPOSE 5556 8554 8888 8889
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["ros2", "launch", "hexapod_bridge", "hexapod.launch.py"]

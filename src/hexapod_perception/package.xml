@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hexapod_perception</name>
+  <version>0.1.0</version>
+  <description>Intel RealSense D455 depth camera integration for hexapod robot</description>
+  <maintainer email="francesco.argentieri@example.com">Francesco Argentieri</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- RealSense dependencies -->
+  <exec_depend>realsense2_camera</exec_depend>
+  <exec_depend>realsense2_description</exec_depend>
+
+  <!-- ROS 2 dependencies -->
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>image_transport</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+
+  <!-- RTSP streaming: the node reads topics with rclpy, turns the 16-bit depth
+       into a heatmap with OpenCV, and pipes frames to ffmpeg. MediaMTX itself
+       is a binary the image fetches; it has no rosdep key. -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>ffmpeg</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

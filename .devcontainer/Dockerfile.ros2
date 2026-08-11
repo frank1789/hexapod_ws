@@ -62,16 +62,26 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # liblua5.3-dev: hexapod_servomotor does find_package(Lua 5.3 REQUIRED), which
 #                needs lua.h — the lua5.3 interpreter package alone is not enough.
 # libi2c-dev:    i2c-peripheral.cc includes <i2c/smbus.h> and the node links -li2c.
+# libzmq3-dev,
+# libfmt-dev,
+# nlohmann-json: hexapod_bridge links all three. vcpkg (vcpkg.json) is the
+#                intended source and the container image uses it, but having the
+#                apt packages here as well means a plain colcon build inside the
+#                dev container works without bootstrapping anything.
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
+        libfmt-dev \
         libi2c-dev \
         liblua5.3-dev \
+        libzmq3-dev \
         lua5.3 \
         ninja-build \
+        nlohmann-json3-dev \
         pkg-config \
+        zip \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------- ROS 2
@@ -167,9 +177,14 @@ WORKDIR /workspace
 
 # Interactive shells get ROS and, once built, the workspace overlay.
 # rosdep runs as the user because it writes into ${HOME}/.ros.
+# AMENT_TRACE_SETUP_FILES is read by setup.bash but not defined; set it empty
+# to prevent 'unbound variable' errors in strict shells.
 RUN printf '%s\n' \
+        'export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"' \
         "source /opt/ros/${ROS_DISTRO}/setup.bash" \
         'if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi' \
+        'export RCUTILS_COLORIZED_OUTPUT=1' \
+        'export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}]: {message}"' \
         >> "${HOME}/.bashrc" \
     && rosdep update --rosdistro "${ROS_DISTRO}"
 
