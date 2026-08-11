@@ -197,6 +197,18 @@ words:
   - cdetect
   - dasharray
   - rect
+  # camera, kernel and container vocabulary the tooling already used
+  - realsense
+  - librealsense
+  - dkms
+  - passthrough
+  - replugged
+  - respawned
+  - rosout
+  - EACCES
+  - SIGPIPE
+  - GNUCXX
+  - kitware
   # known misspellings that are part of an interface, see CLAUDE.md
   - magnitute
   - exapod

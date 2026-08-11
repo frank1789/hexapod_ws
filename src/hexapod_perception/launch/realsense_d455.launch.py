@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Launch Intel RealSense D455 depth camera for hexapod robot.
 
@@ -7,13 +6,10 @@ is not connected. If the camera is missing, a warning is logged but the launch
 continues without crashing ROS.
 """
 
-import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
+from launch.actions import DeclareLaunchArgument, LogInfo
 from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch_ros.substitutions import FindPackageShare
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
@@ -22,69 +18,67 @@ def generate_launch_description():
 
     # Declare launch arguments
     enable_camera_arg = DeclareLaunchArgument(
-        'enable_camera',
-        default_value='true',
-        description='Enable RealSense D455 camera. Set to false to skip camera launch.'
+        "enable_camera",
+        default_value="true",
+        description="Enable RealSense D455 camera. Set to false to skip camera launch.",
     )
 
     enable_rgb_arg = DeclareLaunchArgument(
-        'enable_rgb',
-        default_value='true',
-        description='Enable RGB camera stream'
+        "enable_rgb", default_value="true", description="Enable RGB camera stream"
     )
 
     enable_depth_arg = DeclareLaunchArgument(
-        'enable_depth',
-        default_value='true',
-        description='Enable depth camera stream'
+        "enable_depth", default_value="true", description="Enable depth camera stream"
     )
 
     camera_name_arg = DeclareLaunchArgument(
-        'camera_name',
-        default_value='d455',
-        description='Camera name prefix for topics'
+        "camera_name", default_value="d455", description="Camera name prefix for topics"
     )
 
     # RealSense camera node - only launch if enable_camera is true
     realsense_camera = Node(
-        condition=IfCondition(LaunchConfiguration('enable_camera')),
-        package='realsense2_camera',
-        executable='realsense2_camera_node',
-        name=LaunchConfiguration('camera_name'),
-        namespace='',
-        parameters=[{
-            'enable_color': LaunchConfiguration('enable_rgb'),
-            'enable_depth': LaunchConfiguration('enable_depth'),
-            'enable_infra1': False,
-            'enable_infra2': False,
-            # These two are depth_module.profile and rgb_camera.profile in
-            # realsense2_camera up to 4.51. This image ships a later one, where
-            # the old names are accepted, never read, and silently do nothing:
-            # `ros2 param get /d455 rgb_camera.profile` answers "Parameter not
-            # set" while the camera streams 1280x720, its default, rather than
-            # the 640x480 asked for here. The depth line looked as if it worked
-            # only because 848x480x30 happens to be the default too.
-            'depth_module.depth_profile': '848x480x30',
-            'rgb_camera.color_profile': '640x480x30',
-            'align_depth.enable': True,
-            'initial_reset': True,
-        }],
-        output='screen',
+        condition=IfCondition(LaunchConfiguration("enable_camera")),
+        package="realsense2_camera",
+        executable="realsense2_camera_node",
+        name=LaunchConfiguration("camera_name"),
+        namespace="",
+        parameters=[
+            {
+                "enable_color": LaunchConfiguration("enable_rgb"),
+                "enable_depth": LaunchConfiguration("enable_depth"),
+                "enable_infra1": False,
+                "enable_infra2": False,
+                # These two are depth_module.profile and rgb_camera.profile in
+                # realsense2_camera up to 4.51. This image ships a later one, where
+                # the old names are accepted, never read, and silently do nothing:
+                # `ros2 param get /d455 rgb_camera.profile` answers "Parameter not
+                # set" while the camera streams 1280x720, its default, rather than
+                # the 640x480 asked for here. The depth line looked as if it worked
+                # only because 848x480x30 happens to be the default too.
+                "depth_module.depth_profile": "848x480x30",
+                "rgb_camera.color_profile": "640x480x30",
+                "align_depth.enable": True,
+                "initial_reset": True,
+            }
+        ],
+        output="screen",
         # ROS will restart the node if it crashes, but won't fail the entire system
         respawn=False,
         respawn_delay=2.0,
     )
 
     camera_disabled_info = LogInfo(
-        condition=IfCondition(LaunchConfiguration('enable_camera')),
-        msg='Launching Intel RealSense D455 camera...'
+        condition=IfCondition(LaunchConfiguration("enable_camera")),
+        msg="Launching Intel RealSense D455 camera...",
     )
 
-    return LaunchDescription([
-        enable_camera_arg,
-        enable_rgb_arg,
-        enable_depth_arg,
-        camera_name_arg,
-        camera_disabled_info,
-        realsense_camera,
-    ])
+    return LaunchDescription(
+        [
+            enable_camera_arg,
+            enable_rgb_arg,
+            enable_depth_arg,
+            camera_name_arg,
+            camera_disabled_info,
+            realsense_camera,
+        ]
+    )

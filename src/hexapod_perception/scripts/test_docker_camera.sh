@@ -42,7 +42,7 @@ fi
 
 # Check video devices
 if ls /dev/video* >/dev/null 2>&1; then
-    ok "Video devices accessible: $(ls /dev/video* | wc -l) device(s)"
+    ok "Video devices accessible: $(find /dev -maxdepth 1 -name 'video*' | wc -l) device(s)"
 else
     warn "No /dev/video* devices found in container"
     echo "  Check compose.yaml device_cgroup_rules for 'c 81:* rmw'"

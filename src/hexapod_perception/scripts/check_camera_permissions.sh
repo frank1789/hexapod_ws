@@ -36,7 +36,7 @@ fi
 
 # Check if video devices exist
 if ls /dev/video* >/dev/null 2>&1; then
-    ok "Video devices found: $(ls /dev/video* | wc -l) device(s)"
+    ok "Video devices found: $(find /dev -maxdepth 1 -name 'video*' | wc -l) device(s)"
     for dev in /dev/video*; do
         echo "    - $dev"
     done
