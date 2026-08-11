@@ -45,6 +45,14 @@ The same two are served as WebRTC at `http://<pi>:8889/color/` and as HLS at
 `http://<pi>:8888/color/index.m3u8`. WebRTC has the lowest latency and needs no
 plugin; HLS plays on iOS and Safari, at the cost of several seconds.
 
+WebRTC needs one more port than the page it is served from. MediaMTX also opens
+**8189/UDP** for ICE, and `compose.yaml` publishes 8554, 8888 and 8889 but not
+that one, so the container announces candidates on an address nothing outside
+the bridge network can reach. The page loads and the video does not start.
+Publishing `8189:8189/udp` and setting `webrtcAdditionalHosts` to the Pi's LAN
+address is what fixes it; this has not been tested here. RTSP and HLS are
+unaffected — both are TCP on ports that are published.
+
 The depth stream is given twice the bitrate for a reason. False colour compresses
 far worse than a photograph: the speckle of unresolved pixels changes every
 frame and defeats inter-frame prediction. Measured on this camera, four seconds
@@ -117,7 +125,7 @@ Environment variables in `compose.yaml`, read by the streaming node.
 |---|---|---|
 | `HEXAPOD_WITH_STREAMING` | `false` | start the RTSP server |
 | `HEXAPOD_STREAM_ENCODER` | `libx264` | ffmpeg encoder; `h264_v4l2m2m` uses the Pi 4 hardware |
-| `HEXAPOD_STREAM_BITRATE` | per path | overrides the ceiling set in `mediamtx.yml` |
+| `HEXAPOD_STREAM_BITRATE` | `2M` | fallback only, see below |
 | `HEXAPOD_STREAM_FPS` | `30` | frame rate declared to ffmpeg |
 | `HEXAPOD_STREAM_DEPTH_MIN_M` | `0.3` | near end of the heatmap window |
 | `HEXAPOD_STREAM_DEPTH_MAX_M` | `4.0` | far end of the heatmap window |
@@ -127,6 +135,12 @@ Environment variables in `compose.yaml`, read by the streaming node.
 
 The two paths and their commands are in
 `src/hexapod_perception/config/mediamtx.yml`.
+
+`HEXAPOD_STREAM_BITRATE` is the odd one out: it is only the argparse default,
+and `mediamtx.yml` passes `--bitrate` explicitly on both paths, which wins.
+Setting it changes nothing until that argument is taken out of the path's
+command. The other four are read as written, because `mediamtx.yml` does not
+pass them.
 
 ## What it costs
 
