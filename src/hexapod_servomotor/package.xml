@@ -21,7 +21,13 @@
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>
 
-  <!-- System dependencies: lua5.3 headers, sol2 and the i2c userspace library. -->
+  <!--
+    System dependencies: a Lua runtime, sol2 and the i2c userspace library.
+    LuaJIT is preferred by CMake when it is installed and is deliberately not
+    listed here: it is optional, the build falls back to the reference
+    interpreter without it, and rosdep has no key for it. The dev container
+    installs it directly, and vcpkg.json pins it for a vcpkg build.
+  -->
   <depend>liblua5.3-dev</depend>
   <depend>libi2c-dev</depend>
 
