@@ -251,6 +251,7 @@ words:
   - buildtrees
   - Dockerfiles
   - glxinfo
+  - Kitware
   - libluajit
   - libspdlog
   - luajit

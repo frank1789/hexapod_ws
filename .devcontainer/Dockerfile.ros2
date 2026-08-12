@@ -75,7 +75,23 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 #                  -li2c; these are kernel userspace bindings, vcpkg has no port
 #   liblua5.3-dev  the fallback runtime when LuaJIT is unavailable, and the
 #                  source of luac5.3, which the lua-syntax pre-commit hook runs
+#
+# CMake comes from Kitware, not from Ubuntu, and that is a requirement rather
+# than a preference: vcpkg's port scripts call string(JSON ... STRING_ENCODE),
+# which arrived in CMake 3.31, while Ubuntu 24.04 carries 3.28. Against 3.28
+# vcpkg fails on the first port before compiling a line:
+#
+#   CMake Error at scripts/cmake/z_vcpkg_spdx.cmake:15 (string):
+#     string sub-command JSON got an invalid mode 'STRING_ENCODE'
+#
+# Kitware publishes noble packages for amd64 and arm64 alike, so one apt source
+# serves an Intel Mac, an Apple Silicon Mac and the Pi. The key is stored
+# ASCII-armoured and referenced with signed-by, which needs no gnupg.
 RUN export DEBIAN_FRONTEND=noninteractive \
+    && curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
+        -o /usr/share/keyrings/kitware-archive-keyring.asc \
+    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.asc] https://apt.kitware.com/ubuntu/ $(. /etc/os-release && echo "${VERSION_CODENAME}") main" \
+        > /etc/apt/sources.list.d/kitware.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
@@ -88,6 +104,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         tar \
         unzip \
         zip \
+    && cmake --version \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------- ROS 2
@@ -171,36 +188,36 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # eyes on them.
 ENV VCPKG_ROOT=/opt/vcpkg \
     VCPKG_INSTALLED=/opt/vcpkg_installed \
-    VCPKG_DISABLE_METRICS=1
+    VCPKG_DISABLE_METRICS=1 \
+    VCPKG_FORCE_SYSTEM_BINARIES=1
 
-# master, as in docker/Dockerfile. vcpkg.json carries no builtin-baseline, so
-# the commit checked out here is the version pin: pass the same
-# --build-arg VCPKG_REF=<sha> to both images when that has to be reproducible.
-# A baseline in the manifest would be the tidier way to say it and is not
-# usable — see doc/simulation.md, "Pinning the dependency set".
+# master, as in docker/Dockerfile. The branch only decides which vcpkg *tool*
+# is built; which port versions are installed is locked by the baseline in
+# vcpkg-configuration.json, so master moving on cannot change this image.
 ARG VCPKG_REF=master
 
-# VCPKG_FORCE_SYSTEM_BINARIES is deliberately not set, and that is what makes
-# this image build on an Apple Silicon Mac.
+# VCPKG_FORCE_SYSTEM_BINARIES above is set exactly as docker/Dockerfile sets it,
+# and it is safe here only because the CMake installed above is new enough. The
+# two go together: with Ubuntu's 3.28 this flag is what breaks the build, on
+# arm64 and x86_64 alike. Change one and you must change the other.
 #
-# vcpkg's own port scripts call string(JSON ... STRING_ENCODE), which arrived in
-# CMake 3.31. Ubuntu 24.04 carries 3.28, so pointing vcpkg at the system CMake
-# fails every port before it compiles a line — on arm64 exactly as on x86_64:
-#
-#   CMake Error at scripts/cmake/z_vcpkg_spdx.cmake:15 (string):
-#     string sub-command JSON got an invalid mode 'STRING_ENCODE'
-#
-# Left unset, vcpkg downloads the CMake and Ninja it is tested against. It
-# publishes both for linux/amd64 and linux/arm64 (scripts/vcpkg-tools.json), so
-# an Intel Mac and an Apple Silicon Mac take the same path — and the system
-# CMake stays at the version ROS and colcon are tested against, which is the
-# other half of why nothing is upgraded here.
+# Keeping it on means vcpkg uses the CMake and Ninja already in the image rather
+# than downloading a second copy of each, which is one fewer thing to differ
+# between an Intel Mac, an Apple Silicon Mac and the Pi.
 RUN git clone --depth 1 --branch "${VCPKG_REF}" https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}" \
     && "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
 
-# Only the manifest is copied, so editing a source file never invalidates the
-# layer that compiled the third-party libraries.
-COPY vcpkg.json /tmp/vcpkg/vcpkg.json
+# Only the manifest and its configuration are copied, so editing a source file
+# never invalidates the layer that compiled the third-party libraries.
+#
+# vcpkg-configuration.json is what makes the build repeatable. It names
+# microsoft/vcpkg as a git registry with a fixed baseline commit, so the port
+# versions come from that commit no matter where master has got to. vcpkg
+# fetches the registry into its own cache, which is why this works while a
+# builtin-baseline does not: that one is read out of the shallow clone above,
+# and fails with "failed to git show versions/baseline.json" as soon as master
+# moves past it.
+COPY vcpkg.json vcpkg-configuration.json /tmp/vcpkg/
 
 RUN VCPKG_TRIPLET="$(uname -m | sed 's/aarch64/arm64-linux/; s/x86_64/x64-linux/')" \
     && echo "${VCPKG_TRIPLET}" > /opt/vcpkg_triplet \
