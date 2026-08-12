@@ -5,10 +5,12 @@
 # Every version-specific value is an ARG and nothing below hard-codes a distro
 # or a compiler version, so upgrading is a one-line change:
 #
-#   docker build -f Dockerfile.ros2 -t hexapod-dev \
+#   docker build -f .devcontainer/Dockerfile.ros2 -t hexapod-dev \
 #       --build-arg ROS_DISTRO=kilted --build-arg LLVM_VERSION=22 .
 #
-# The same ARGs are surfaced in devcontainer.json.
+# The build context is the root of the workspace, not .devcontainer, because
+# vcpkg.json is resolved while the image is built. The same ARGs are surfaced in
+# devcontainer.json.
 
 ARG UBUNTU_VERSION=24.04
 FROM ubuntu:${UBUNTU_VERSION}
@@ -59,28 +61,32 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && rm -rf /var/lib/apt/lists/*
 
 # ------------------------------------------------ project build dependencies
-# liblua5.3-dev: hexapod_servomotor does find_package(Lua 5.3 REQUIRED), which
-#                needs lua.h — the lua5.3 interpreter package alone is not enough.
-# libi2c-dev:    i2c-peripheral.cc includes <i2c/smbus.h> and the node links -li2c.
-# libzmq3-dev,
-# libfmt-dev,
-# nlohmann-json: hexapod_bridge links all three. vcpkg (vcpkg.json) is the
-#                intended source and the container image uses it, but having the
-#                apt packages here as well means a plain colcon build inside the
-#                dev container works without bootstrapping anything.
+# Deliberately the same set as docker/Dockerfile: zip, unzip and tar are vcpkg's
+# own requirements, the rest is what the workspace needs to compile.
+#
+# Nothing declared in vcpkg.json is installed from apt. fmt, ZeroMQ, cppzmq,
+# Eigen, sol2 and LuaJIT all come from the manifest, so this image resolves them
+# exactly the way the image that ships to the robot does. An apt copy alongside
+# would be a second, differently versioned answer to the same find_package(),
+# and the dev container would stop predicting what the Pi builds.
+#
+# Two dependencies are not in the manifest and cannot be:
+#   libi2c-dev     i2c-peripheral.cc includes <i2c/smbus.h> and the node links
+#                  -li2c; these are kernel userspace bindings, vcpkg has no port
+#   liblua5.3-dev  the fallback runtime when LuaJIT is unavailable, and the
+#                  source of luac5.3, which the lua-syntax pre-commit hook runs
 RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
-        libfmt-dev \
         libi2c-dev \
         liblua5.3-dev \
-        libzmq3-dev \
         lua5.3 \
         ninja-build \
-        nlohmann-json3-dev \
         pkg-config \
+        tar \
+        unzip \
         zip \
     && rm -rf /var/lib/apt/lists/*
 
@@ -154,6 +160,82 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && pipx install pre-commit \
     && rm -rf /var/lib/apt/lists/*
 
+# --------------------------------------------------------------------- vcpkg
+# The same arrangement as docker/Dockerfile, so a dependency behaves identically
+# here and in the image that ships to the robot: one manifest (vcpkg.json), one
+# installed tree, one triplet derived from the architecture doing the build.
+#
+# This is the only source of cppzmq, sol2 and LuaJIT in the image. Without it
+# the bridge falls back to fetching cppzmq at configure time and the servo node
+# to the reference Lua interpreter — both work, and both are the path with fewer
+# eyes on them.
+ENV VCPKG_ROOT=/opt/vcpkg \
+    VCPKG_INSTALLED=/opt/vcpkg_installed \
+    VCPKG_DISABLE_METRICS=1
+
+# master, as in docker/Dockerfile. vcpkg.json carries no builtin-baseline, so
+# the commit checked out here is the version pin: pass the same
+# --build-arg VCPKG_REF=<sha> to both images when that has to be reproducible.
+# A baseline in the manifest would be the tidier way to say it and is not
+# usable — see doc/simulation.md, "Pinning the dependency set".
+ARG VCPKG_REF=master
+
+# VCPKG_FORCE_SYSTEM_BINARIES is deliberately not set, and that is what makes
+# this image build on an Apple Silicon Mac.
+#
+# vcpkg's own port scripts call string(JSON ... STRING_ENCODE), which arrived in
+# CMake 3.31. Ubuntu 24.04 carries 3.28, so pointing vcpkg at the system CMake
+# fails every port before it compiles a line — on arm64 exactly as on x86_64:
+#
+#   CMake Error at scripts/cmake/z_vcpkg_spdx.cmake:15 (string):
+#     string sub-command JSON got an invalid mode 'STRING_ENCODE'
+#
+# Left unset, vcpkg downloads the CMake and Ninja it is tested against. It
+# publishes both for linux/amd64 and linux/arm64 (scripts/vcpkg-tools.json), so
+# an Intel Mac and an Apple Silicon Mac take the same path — and the system
+# CMake stays at the version ROS and colcon are tested against, which is the
+# other half of why nothing is upgraded here.
+RUN git clone --depth 1 --branch "${VCPKG_REF}" https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}" \
+    && "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
+
+# Only the manifest is copied, so editing a source file never invalidates the
+# layer that compiled the third-party libraries.
+COPY vcpkg.json /tmp/vcpkg/vcpkg.json
+
+RUN VCPKG_TRIPLET="$(uname -m | sed 's/aarch64/arm64-linux/; s/x86_64/x64-linux/')" \
+    && echo "${VCPKG_TRIPLET}" > /opt/vcpkg_triplet \
+    && "${VCPKG_ROOT}/vcpkg" install \
+        --x-manifest-root=/tmp/vcpkg \
+        --x-install-root="${VCPKG_INSTALLED}" \
+        --triplet "${VCPKG_TRIPLET}" \
+        --clean-after-build \
+    && rm -rf /tmp/vcpkg /root/.cache/vcpkg /opt/vcpkg/buildtrees /opt/vcpkg/packages
+
+# ------------------------------------------------------------ graphical tools
+# Docker Desktop on macOS passes no GPU and no X socket into its virtual
+# machine, so the container brings its own display: Xvfb draws, x11vnc exports
+# it and websockify serves the noVNC client over HTTP. The Mac needs a browser
+# and nothing else.
+#
+# fluxbox is not decoration. Without a window manager RViz and the joint slider
+# window both open at the top-left corner with no title bar and cannot be moved
+# or resized.
+#
+# mesa-utils carries glxinfo, which answers "is this really llvmpipe?" in one
+# command instead of a guess. Nothing here is started by the image — see
+# scripts/start-gui.sh.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        fluxbox \
+        mesa-utils \
+        novnc \
+        websockify \
+        x11-utils \
+        x11vnc \
+        xvfb \
+    && rm -rf /var/lib/apt/lists/*
+
 # -------------------------------------------------------------- non-root user
 # Ubuntu 24.04 ships a stock "ubuntu" account on UID 1000, which collides with
 # the host UID we normally want. Free the requested UID/GID first so the
@@ -170,7 +252,7 @@ RUN if getent passwd ${USER_UID} >/dev/null; then \
     && mkdir -p /workspace \
     && chown ${USER_UID}:${USER_GID} /workspace
 
-COPY --chmod=0755 entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=0755 .devcontainer/entrypoint.sh /usr/local/bin/entrypoint.sh
 
 USER ${USERNAME}
 WORKDIR /workspace

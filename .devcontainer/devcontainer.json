@@ -3,7 +3,10 @@
     "name": "hexapod_ws (ROS 2)",
     "build": {
         "dockerfile": "Dockerfile.ros2",
-        "context": ".",
+        // The whole workspace, not .devcontainer: the image copies vcpkg.json
+        // from the root so the dependency manifest is resolved while the image
+        // is built rather than on every configure.
+        "context": "..",
         "args": {
             // Bump these two to upgrade ROS 2 / clang; nothing else to change.
             "ROS_DISTRO": "jazzy",
@@ -18,6 +21,37 @@
     "remoteUser": "${localEnv:USER}",
     "updateRemoteUserUID": true,
     "postCreateCommand": "bash .devcontainer/postCreate.sh",
+    // Idempotent, and cheap when the display is already up. Having it here means
+    // rviz2 can be started from any terminal without a preparatory step.
+    "postStartCommand": "bash scripts/start-gui.sh",
+
+    // The noVNC client. Open http://localhost:6080/vnc.html on the host.
+    "forwardPorts": [6080],
+    "portsAttributes": {
+        "6080": {
+            "label": "noVNC (RViz)",
+            "onAutoForward": "notify"
+        }
+    },
+
+    "containerEnv": {
+        // The display scripts/start-gui.sh creates. Every GUI tool inherits it,
+        // so rviz2 needs no arguments and no wrapper.
+        "DISPLAY": ":99",
+        // Docker Desktop passes no GPU into its virtual machine, on an Intel Mac
+        // or any other. Saying so up front turns an obscure GLX failure into
+        // plain software rendering through Mesa's llvmpipe.
+        "LIBGL_ALWAYS_SOFTWARE": "1",
+        "GALLIUM_DRIVER": "llvmpipe",
+        // Qt on a bare X server with no compositor and no shared memory.
+        "QT_X11_NO_MITSHM": "1",
+        "QT_QPA_PLATFORM": "xcb",
+        // Keep DDS inside the container: nothing outside it needs to be
+        // discovered. ROS_LOCALHOST_ONLY is the pre-Jazzy spelling and now warns
+        // on every node start; docker/compose.yaml uses this one too.
+        "ROS_AUTOMATIC_DISCOVERY_RANGE": "LOCALHOST"
+    },
+
     "customizations": {
         "vscode": {
             "extensions": [
@@ -40,6 +74,14 @@
                 // The merged database written by scripts/merge-compile-commands.sh
                 "clangd.arguments": [
                     "--compile-commands-dir=${workspaceFolder}"
+                ],
+                // Same dependency source the command line uses, so a configure
+                // from the CMake Tools extension resolves cppzmq and the rest
+                // exactly as build_exapod.sh does.
+                "cmake.configureArgs": [
+                    "-DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                    "-DVCPKG_MANIFEST_MODE=OFF",
+                    "-DVCPKG_INSTALLED_DIR=/opt/vcpkg_installed"
                 ]
             }
         }
