@@ -12,8 +12,11 @@ Copyright (c) 2021-2026 Francesco Argentieri
 import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
+import yaml
+
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 URDF = PACKAGE_ROOT / "urdf" / "Hexapod.urdf"
+RVIZ_CONFIG = PACKAGE_ROOT / "rviz" / "hexapod.rviz"
 MESH_PREFIX = "package://hexapod_description/"
 
 
@@ -65,3 +68,31 @@ def test_launch_file_points_at_the_real_model():
     assert URDF.name in launch_file.read_text(
         encoding="utf-8"
     ), f"display.launch.py does not mention {URDF.name}"
+
+
+def test_rviz_configuration_exists_and_is_launched():
+    """The launch file names an RViz configuration; check it is really there.
+
+    Same failure mode as the URDF above: the name is a string that nothing
+    verifies until someone starts RViz and gets an empty scene.
+    """
+    launch_file = PACKAGE_ROOT / "launch" / "display.launch.py"
+    assert RVIZ_CONFIG.is_file(), f"{RVIZ_CONFIG} is missing"
+    assert RVIZ_CONFIG.name in launch_file.read_text(
+        encoding="utf-8"
+    ), f"display.launch.py does not mention {RVIZ_CONFIG.name}"
+
+
+def test_rviz_configuration_matches_the_model():
+    """The Fixed Frame has to be a link the URDF declares.
+
+    RViz draws nothing at all when the Fixed Frame does not exist, and says so
+    only in a panel nobody has open. Its default is "map", which this model does
+    not have.
+    """
+    configuration = yaml.safe_load(RVIZ_CONFIG.read_text(encoding="utf-8"))
+    fixed_frame = configuration["Visualization Manager"]["Global Options"]["Fixed Frame"]
+
+    root = ElementTree.parse(URDF).getroot()
+    links = {link.get("name") for link in root.findall("link")}
+    assert fixed_frame in links, f"Fixed Frame {fixed_frame!r} is not a link of the model"

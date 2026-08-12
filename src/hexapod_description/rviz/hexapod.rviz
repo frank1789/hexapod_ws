@@ -1,0 +1,126 @@
+# RViz configuration for the hexapod model.
+#
+# Two reasons this file exists rather than leaving RViz on its defaults:
+#
+#   * the stock configuration carries no RobotModel display and a Fixed Frame of
+#     "map", which this model does not have, so RViz opens on an empty scene and
+#     has to be set up by hand every time;
+#   * inside a container there is no GPU, so everything is drawn by Mesa's
+#     llvmpipe on the CPU. The choices below are sized for that: a modest window,
+#     a grid that covers the robot and no more, and the TF display switched off.
+#
+# Override it with `rviz_config:=/path/to/other.rviz` on the launch command line.
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /RobotModel1
+      Splitter Ratio: 0.5
+    Tree Height: 600
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    # The robot is roughly 0.35 m across, so 20 cells of 0.1 m frame it with a
+    # little room to spare. A larger grid is more triangles for no information.
+    - Alpha: 0.5
+      Cell Size: 0.1
+      Class: rviz_default_plugins/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 20
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 1
+      Class: rviz_default_plugins/RobotModel
+      # The URDF has no collision geometry, so drawing it would show nothing.
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+      # The exported inertia tensors make RViz complain; the boxes they would
+      # draw are not wanted here in any case.
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    # Eighteen joints is eighteen frame triads and their labels, which is both
+    # unreadable and the single most expensive thing to draw under llvmpipe.
+    # Kept so it can be switched on when a transform is in question, off so the
+    # normal case stays fast.
+    - Class: rviz_default_plugins/TF
+      Enabled: false
+      Marker Scale: 0.1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: false
+      Value: false
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    # The root link of Hexapod.urdf. RViz defaults to "map", which does not
+    # exist in this model, and then draws nothing without saying why.
+    Fixed Frame: root_jnt
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/FocusCamera
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 0.75
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: -0.05
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.22
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 0.7
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  # Sized to sit inside the 1280x800 display scripts/start-gui.sh creates.
+  Height: 760
+  Hide Left Dock: false
+  Hide Right Dock: true
+  Views:
+    collapsed: true
+  Width: 1240
