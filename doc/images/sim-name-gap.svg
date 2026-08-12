@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" width="900" height="560" role="img"
+     aria-label="Two paths into RViz. The joint_state_publisher_gui publishes joint_states using the URDF joint names and drives the model today. The ZeroMQ bridge publishes joint_command using the motor names from motors.lua, in a different range, so nothing connects it to robot_state_publisher: the names and the angle convention would both have to be translated by a relay node that does not exist yet.">
+  <rect x="0" y="0" width="900" height="560" fill="#ffffff"/>
+  <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
+
+    <text x="16" y="26" font-size="15" font-weight="bold">Two vocabularies: what already drives the model, and what does not</text>
+
+    <!-- ===================== working path ===================== -->
+    <rect x="16" y="44" width="868" height="150" rx="8" fill="#f6fbf7" stroke="#1a7f37" stroke-dasharray="5 3"/>
+    <text x="28" y="62" font-size="11" fill="#1a7f37" font-weight="bold">works today &#8212; verified in the dev container</text>
+
+    <rect x="32" y="76" width="196" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="130" y="100" text-anchor="middle" font-weight="bold">joint_state_publisher_gui</text>
+    <text x="130" y="120" text-anchor="middle" font-size="11" fill="#57606a">one slider per revolute joint</text>
+
+    <line x1="228" y1="109" x2="326" y2="109" stroke="#1a7f37" stroke-width="2"/>
+    <polygon points="326,109 318,105 318,113" fill="#1a7f37"/>
+    <text x="277" y="100" text-anchor="middle" font-size="10" fill="#1a7f37">/joint_states</text>
+    <text x="277" y="126" text-anchor="middle" font-size="10" fill="#57606a">18 names, radians</text>
+
+    <rect x="326" y="76" width="196" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="424" y="100" text-anchor="middle" font-weight="bold">robot_state_publisher</text>
+    <text x="424" y="120" text-anchor="middle" font-size="11" fill="#57606a">URDF &#8594; forward kinematics</text>
+
+    <line x1="522" y1="109" x2="620" y2="109" stroke="#1a7f37" stroke-width="2"/>
+    <polygon points="620,109 612,105 612,113" fill="#1a7f37"/>
+    <text x="571" y="100" text-anchor="middle" font-size="10" fill="#1a7f37">/tf</text>
+
+    <rect x="620" y="76" width="120" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="680" y="106" text-anchor="middle" font-weight="bold">rviz2</text>
+    <text x="680" y="124" text-anchor="middle" font-size="11" fill="#57606a">RobotModel</text>
+
+    <text x="760" y="98" font-size="10" fill="#57606a">L_front_coxa_jnt</text>
+    <text x="760" y="114" font-size="10" fill="#57606a">L_front_femur_jnt</text>
+    <text x="760" y="130" font-size="10" fill="#57606a">&#8230; 18 in total</text>
+
+    <text x="32" y="168" font-size="11" fill="#57606a">Names come from the URDF. Limits are &#8722;1.5708 to +1.5708 rad, so zero is the middle of the travel.</text>
+    <text x="32" y="185" font-size="11" fill="#57606a">This is the whole of `ros2 launch hexapod_description display.launch.py`.</text>
+
+    <!-- ===================== the gap ===================== -->
+    <rect x="16" y="212" width="868" height="240" rx="8" fill="#fffbfb" stroke="#cf222e" stroke-dasharray="5 3"/>
+    <text x="28" y="230" font-size="11" fill="#cf222e" font-weight="bold">does not reach the model &#8212; the two ends speak different names</text>
+
+    <rect x="32" y="244" width="180" height="66" rx="6" fill="#fff8e6" stroke="#9a6700"/>
+    <text x="122" y="268" text-anchor="middle" font-weight="bold">hexapod_pose_sender.py</text>
+    <text x="122" y="288" text-anchor="middle" font-size="11" fill="#57606a">Maya / Blender, degrees</text>
+
+    <line x1="212" y1="277" x2="300" y2="277" stroke="#8250df" stroke-width="2"/>
+    <polygon points="300,277 292,273 292,281" fill="#8250df"/>
+    <text x="256" y="268" text-anchor="middle" font-size="10" fill="#8250df">ZeroMQ</text>
+    <text x="256" y="294" text-anchor="middle" font-size="10" fill="#8250df">:5556</text>
+
+    <rect x="300" y="244" width="180" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="390" y="268" text-anchor="middle" font-weight="bold">hexapod_bridge</text>
+    <text x="390" y="288" text-anchor="middle" font-size="11" fill="#57606a">validates, converts to rad</text>
+
+    <line x1="480" y1="277" x2="568" y2="277" stroke="#0969da" stroke-width="2"/>
+    <polygon points="568,277 560,273 560,281" fill="#0969da"/>
+    <text x="524" y="268" text-anchor="middle" font-size="10" fill="#0969da">joint_command</text>
+
+    <rect x="568" y="244" width="180" height="66" rx="6" fill="#eef2f6" stroke="#57606a"/>
+    <text x="658" y="268" text-anchor="middle" font-weight="bold">servomotors_node</text>
+    <text x="658" y="288" text-anchor="middle" font-size="11" fill="#57606a">PCA9685, needs I&#178;C</text>
+
+    <!-- the broken link up to robot_state_publisher -->
+    <path d="M524 244 L524 200" fill="none" stroke="#cf222e" stroke-width="2" stroke-dasharray="6 4"/>
+    <line x1="512" y1="216" x2="536" y2="228" stroke="#cf222e" stroke-width="3"/>
+    <line x1="536" y1="216" x2="512" y2="228" stroke="#cf222e" stroke-width="3"/>
+
+    <!-- comparison table -->
+    <rect x="32" y="330" width="836" height="106" rx="6" fill="#ffffff" stroke="#cf222e"/>
+    <text x="48" y="352" font-size="11" font-weight="bold" fill="#cf222e">why a plain topic remap is not enough</text>
+
+    <text x="48" y="376" font-size="11" font-weight="bold">joint_command carries</text>
+    <text x="48" y="396" font-size="11" fill="#57606a">L_coxaA &#183; L_femurA &#183; L_tibiaA &#8230; R_tibiaC</text>
+    <text x="48" y="414" font-size="11" fill="#57606a">0&#8211;180&#176; on the wire, so 0&#8211;3.1416 rad after the bridge; 90&#176; is the rest pose</text>
+
+    <text x="468" y="376" font-size="11" font-weight="bold">the URDF declares</text>
+    <text x="468" y="396" font-size="11" fill="#57606a">L_front_coxa_jnt &#183; L_front_femur_jnt &#8230; R_back_tibia_jnt</text>
+    <text x="468" y="414" font-size="11" fill="#57606a">&#8722;1.5708 to +1.5708 rad; 0 is the middle of the travel</text>
+
+    <line x1="452" y1="360" x2="452" y2="424" stroke="#d0d7de"/>
+
+    <!-- ===================== what would close it ===================== -->
+    <rect x="16" y="466" width="868" height="78" rx="8" fill="#fbfdff" stroke="#8b949e"/>
+    <text x="32" y="488" font-size="11" font-weight="bold">what would close it, and what is still unknown</text>
+    <text x="32" y="508" font-size="11" fill="#57606a">A relay subscribing to joint_command and publishing /joint_states, renaming all eighteen and shifting each angle</text>
+    <text x="32" y="526" font-size="11" fill="#57606a">by (degrees &#8722; 90) &#215; &#960;/180. But nothing in this repository says whether leg A is the front leg or the back one.</text>
+
+  </g>
+</svg>

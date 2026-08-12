@@ -32,8 +32,72 @@ ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args --log-level debug
 Upgrading ROS 2 or clang is a one-line change in `.devcontainer/devcontainer.json`
 (`ROS_DISTRO`, `LLVM_VERSION`); the Dockerfile derives everything else from those ARGs.
 
-`hexapod_servomotor` needs Lua 5.3 headers (`liblua5.3-dev`), `libi2c-dev` and sol2; sol2 is fetched
-via `FetchContent` at configure time when not installed, so the first configure needs network access.
+### Dependencies
+
+**vcpkg first, `FetchContent` only when a dependency is not packaged.** `vcpkg.json` is the
+manifest; the dev container and `docker/Dockerfile` both bootstrap vcpkg and resolve it once while
+the image is built, into `/opt/vcpkg_installed`. `build_exapod.sh` picks the toolchain up from
+`VCPKG_ROOT` on its own and falls back to the system packages when vcpkg is absent, so a bare host
+and a Pi set up by `scripts/install-raspberrypi.sh` still build.
+
+Every CMake dependency lookup follows the same shape: config package first, then a fetch. Do not
+add a `FetchContent` for something vcpkg already carries.
+
+**Neither image installs a manifest dependency from apt on purpose.** `.devcontainer/Dockerfile.ros2`
+and `docker/Dockerfile` ask for the same short list — `libi2c-dev` and `liblua5.3-dev`, neither of
+which vcpkg can supply — and take the other seven from the manifest. Adding `libfmt-dev` or
+`libzmq3-dev` back "so it builds without vcpkg" gives `find_package()` a second, differently
+versioned answer and stops the dev container predicting what the robot builds. The system-package
+fallback is for a bare host and the Pi, not for the images.
+
+"On purpose" is the operative phrase: `libfmt-dev` 9.1.0 is still in the dev image as a transitive
+dependency of `libspdlog-dev`, which ROS itself pulls in. It loses anyway — the vcpkg toolchain
+puts `/opt/vcpkg_installed` first, and `fmt_DIR` resolves there — but do not read a `dpkg -l` hit
+as proof the policy was broken. Check `build/<pkg>/CMakeCache.txt` for the `*_DIR` value instead.
+
+Two facts about manifest mode, both verified by running it, both easy to get wrong:
+
+- `-DVCPKG_MANIFEST_MODE=OFF` in `build_exapod.sh` and both Dockerfiles does **not** mean the
+  manifest is unused. It is resolved once per image, for the whole workspace; `OFF` stops every
+  colcon package re-resolving it into its own build directory.
+- **Do not add a `builtin-baseline` to `vcpkg.json`.** Both images clone vcpkg with `--depth 1`,
+  and vcpkg cannot read a baseline commit that shallow clone does not contain — it fails with
+  `failed to git show versions/baseline.json` rather than fetching it. Since the clone follows
+  `VCPKG_REF`, defaulting to `master`, a baseline breaks the build as soon as master moves. The
+  version pin is `VCPKG_REF`, which is an `ARG` in both files.
+
+**Architecture.** The vcpkg triplet is derived from `uname -m`, so x86-64 and arm64 hosts — an
+Intel Mac, an Apple Silicon Mac, a Pi — need no configuration. `VCPKG_FORCE_SYSTEM_BINARIES` must
+stay unset: vcpkg's port scripts need CMake ≥ 3.31 (`string(JSON ... STRING_ENCODE)`) and Ubuntu
+24.04 has 3.28, so setting it fails every port on *every* architecture. vcpkg publishes its own
+CMake and Ninja for `linux/amd64` and `linux/arm64` alike. `docker/Dockerfile` still sets it; that
+is a known defect recorded in [doc/simulation.md](doc/simulation.md), not a pattern to copy.
+
+`hexapod_servomotor` needs a Lua runtime, `libi2c-dev` and sol2. **LuaJIT is preferred** — CMake
+finds it through pkg-config and defines `SOL_LUAJIT=1` — and the reference interpreter is the
+fallback, selected automatically or forced with `-DHEXAPOD_ENABLE_LUAJIT=OFF`. The configure log
+says which one was chosen:
+
+```
+-- Lua runtime: LuaJIT 2.1.x
+```
+
+**Consequence for `config/*.lua`: keep them Lua 5.1.** LuaJIT tracks 5.1, so `//`, `goto`, bitwise
+operators and the integer subtype build against the reference interpreter and then fail on the
+robot. The `lua-syntax` hook runs `luac5.3 -p`, which accepts 5.3-only syntax — it will not catch
+this for you.
+
+### Graphical tools without a GPU
+
+Docker passes no GPU and no X socket into its virtual machine on macOS, so the container carries
+its own display: `scripts/start-gui.sh` starts Xvfb, fluxbox, x11vnc and noVNC, and the
+`postStartCommand` in `devcontainer.json` runs it. Point a browser at `http://localhost:6080`.
+Rendering is Mesa llvmpipe on the CPU — usable for this model, and the reason
+`src/hexapod_description/rviz/hexapod.rviz` keeps the TF display off and the grid small.
+
+`display.launch.py` opens that configuration by default. Without it RViz starts with no
+RobotModel display and a Fixed Frame of `map`, which this model does not have, and draws nothing.
+See [doc/simulation.md](doc/simulation.md).
 
 ### Tests
 
@@ -169,8 +233,15 @@ transport.
   starts with `L`, `right_driver_address` (default `0x41`) drives the rest — `WriteOnMotor` dispatches
   purely on the name prefix. Angle→PWM: `map(angle, 0..180 → 650..2350 µs)` scaled by frequency × 4096.
   Parameters: `i2c_bus`, `left_driver_address`, `right_driver_address`, `pwm_frequency`.
-- **`hexapod_description`** — URDF + Blender/DAE meshes, installed to the package share directory
-  because the URDF refers to its meshes through `package://` URIs.
+- **`hexapod_description`** — URDF + Blender/DAE meshes + the RViz configuration, all installed to
+  the package share directory because the URDF refers to its meshes through `package://` URIs and
+  `display.launch.py` resolves the RViz file the same way. Its joint names are
+  `<L|R>_<front|mid|back>_<coxa|femur|tibia>_jnt` and **do not match the motor names in
+  `motors.lua`** (`<L|R>_<coxa|femur|tibia><A|B|C>`), nor the angle convention: the URDF centres
+  each joint on 0 rad within ±1.5708, the wire format runs 0–180° with 90° as the rest pose.
+  Nothing bridges the two, so a pose on `joint_command` cannot drive the model. Which of `A`, `B`,
+  `C` is the front, middle and back leg is **not recorded anywhere in this repository** — do not
+  guess it.
 - **`src/adafruit`** — **not a ROS package** (no `package.xml`/`CMakeLists.txt`), so it is never built.
   It is a divergent duplicate of the I²C/PCA9685 drivers vendored inside `hexapod_servomotor`.
   Edit `hexapod_servomotor/{include,src}` — changes to `src/adafruit` have no effect.

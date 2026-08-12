@@ -252,6 +252,7 @@ words:
   - Dockerfiles
   - glxinfo
   - libluajit
+  - libspdlog
   - luajit
   - LUAJIT
   - modversion
