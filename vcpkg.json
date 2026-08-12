@@ -8,7 +8,9 @@
     "cppzmq",
     "eigen3",
     "fmt",
+    "luajit",
     "nlohmann-json",
+    "sol2",
     "zeromq"
   ]
 }
