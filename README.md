@@ -26,7 +26,7 @@ pose left them, and the streamed poses resume once it has been quiet. See
 |---|---|
 | ROS 2 | Jazzy (any distribution works; nothing hard-codes one) |
 | Compiler | C++20, strict ISO, no GNU extensions |
-| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json`, `luajit`, `sol2` — see [`vcpkg.json`](vcpkg.json) |
+| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json`, `luajit`, `sol2` — see [`vcpkg.json`](vcpkg.json), with the versions pinned in [`vcpkg-configuration.json`](vcpkg-configuration.json) |
 | Lua runtime | [LuaJIT](https://luajit.org) when it is installed, the reference interpreter otherwise. The scripts in `config/` stay Lua 5.1 so both work |
 | System libraries | `libluajit-5.1-dev`, `liblua5.3-dev`, `libi2c-dev`, and `libzmq3-dev`, `libfmt-dev`, `nlohmann-json3-dev` when building without vcpkg |
 | Fetched at configure time | [sol2](https://github.com/ThePhD/sol2) and [cppzmq](https://github.com/zeromq/cppzmq), only when neither vcpkg nor the system provides them |

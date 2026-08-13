@@ -60,18 +60,26 @@ Two facts about manifest mode, both verified by running it, both easy to get wro
 - `-DVCPKG_MANIFEST_MODE=OFF` in `build_exapod.sh` and both Dockerfiles does **not** mean the
   manifest is unused. It is resolved once per image, for the whole workspace; `OFF` stops every
   colcon package re-resolving it into its own build directory.
-- **Do not add a `builtin-baseline` to `vcpkg.json`.** Both images clone vcpkg with `--depth 1`,
-  and vcpkg cannot read a baseline commit that shallow clone does not contain — it fails with
-  `failed to git show versions/baseline.json` rather than fetching it. Since the clone follows
-  `VCPKG_REF`, defaulting to `master`, a baseline breaks the build as soon as master moves. The
-  version pin is `VCPKG_REF`, which is an `ARG` in both files.
+- **The dependency versions are locked in `vcpkg-configuration.json`, not in `vcpkg.json`.** It
+  names microsoft/vcpkg as a `kind: "git"` default registry with a fixed `baseline`, so both images
+  install the same versions however far master has moved. Bumping the set is a one-line change to
+  that baseline. Both Dockerfiles must copy the file next to the manifest — it is read from the
+  manifest root, and a missing one silently reverts to whatever master offers.
+- **Do not replace it with `builtin-baseline`.** Same intent, and it cannot work here: that one is
+  read out of the local `--depth 1` clone, so it fails with
+  `failed to git show versions/baseline.json` as soon as master moves past the commit. The git
+  registry is fetched into vcpkg's own cache and does not care. Both were tested against the same
+  absent commit; only the git registry resolved.
 
-**Architecture.** The vcpkg triplet is derived from `uname -m`, so x86-64 and arm64 hosts — an
-Intel Mac, an Apple Silicon Mac, a Pi — need no configuration. `VCPKG_FORCE_SYSTEM_BINARIES` must
-stay unset: vcpkg's port scripts need CMake ≥ 3.31 (`string(JSON ... STRING_ENCODE)`) and Ubuntu
-24.04 has 3.28, so setting it fails every port on *every* architecture. vcpkg publishes its own
-CMake and Ninja for `linux/amd64` and `linux/arm64` alike. `docker/Dockerfile` still sets it; that
-is a known defect recorded in [doc/simulation.md](doc/simulation.md), not a pattern to copy.
+**Architecture, and the CMake both images install.** The vcpkg triplet is derived from `uname -m`,
+so x86-64 and arm64 hosts — an Intel Mac, an Apple Silicon Mac, a Pi — need no configuration.
+
+Both Dockerfiles install **CMake from Kitware's apt repository**, not from Ubuntu, and both set
+`VCPKG_FORCE_SYSTEM_BINARIES=1`. Those two go together and neither may be changed alone: vcpkg's
+port scripts need CMake ≥ 3.31 (`string(JSON ... STRING_ENCODE)`) and Ubuntu 24.04 ships 3.28, so
+forcing vcpkg onto Ubuntu's CMake fails every port on *every* architecture, arm64 included. Kitware
+publishes `noble` packages for amd64 and arm64 alike, which is what makes one arrangement work on
+all three machines. Each `apt-get install` ends in `cmake --version` so the build log records it.
 
 `hexapod_servomotor` needs a Lua runtime, `libi2c-dev` and sol2. **LuaJIT is preferred** — CMake
 finds it through pkg-config and defines `SOL_LUAJIT=1` — and the reference interpreter is the

@@ -74,22 +74,32 @@ The same picture, with two differences, both in your favour:
 - **There is more CPU to give the software rasteriser**, which is exactly what llvmpipe scales
   with.
 
-One setting decides whether this works at all, and it is in
-[`.devcontainer/Dockerfile.ros2`](../.devcontainer/Dockerfile.ros2): `VCPKG_FORCE_SYSTEM_BINARIES`
-is **not** set. vcpkg's port scripts need CMake 3.31 or newer — they call
-`string(JSON ... STRING_ENCODE)` — and Ubuntu 24.04 carries 3.28, so forcing vcpkg onto the system
-CMake fails every port before it compiles a line:
+Two lines in the Dockerfiles decide whether this works at all, and they belong together:
+
+```dockerfile
+ENV VCPKG_FORCE_SYSTEM_BINARIES=1     # vcpkg uses the CMake and Ninja in the image
+# ... and the image installs CMake from Kitware, not from Ubuntu
+```
+
+vcpkg's port scripts need CMake 3.31 or newer — they call `string(JSON ... STRING_ENCODE)` — and
+Ubuntu 24.04 carries 3.28. Point vcpkg at *that* CMake and every port fails before compiling a
+line, on arm64 exactly as on x86-64:
 
 ```
 CMake Error at scripts/cmake/z_vcpkg_spdx.cmake:15 (string):
   string sub-command JSON got an invalid mode 'STRING_ENCODE'
 ```
 
-That variable used to be set on any non-x86-64 architecture, on the old advice that vcpkg shipped
-prebuilt tools for x86-64 only. It no longer does: `scripts/vcpkg-tools.json` in vcpkg publishes
-CMake and Ninja for `linux/arm64` as well as `linux/amd64`. Leaving the variable unset lets vcpkg
-download the CMake it is tested against on both, and leaves the system CMake at the version ROS and
-colcon expect. **Do not reintroduce it** to "fix" an arm64 build; it is what breaks one.
+Kitware's apt repository supplies a current CMake for `noble` on **amd64 and arm64 alike**, which
+is what lets one arrangement serve an Intel Mac, an Apple Silicon Mac and the Raspberry Pi. Both
+[`.devcontainer/Dockerfile.ros2`](../.devcontainer/Dockerfile.ros2) and
+[`docker/Dockerfile`](../docker/Dockerfile) do it the same way, and the `apt-get install` ends in
+`cmake --version` so the build log records which one was used.
+
+**The two settings are a pair.** Keeping `VCPKG_FORCE_SYSTEM_BINARIES=1` while dropping back to
+Ubuntu's CMake reintroduces the failure above; dropping the flag makes vcpkg download its own
+CMake and Ninja instead, which also works — it publishes both for `linux/arm64` and `linux/amd64`
+in `scripts/vcpkg-tools.json` — but costs a second copy of each. Change one, change the other.
 
 ### Windows with WSL2
 
@@ -393,45 +403,60 @@ The `-DVCPKG_MANIFEST_MODE=OFF` that `build_exapod.sh` and both Dockerfiles pass
 toolchain re-runs the resolution for every colcon package that configures, each in its own build
 directory, and the workspace pays for it once per package instead of once per image.
 
-### Pinning the dependency set
+### Locking the dependency versions
 
-`vcpkg.json` deliberately carries **no `builtin-baseline`**, and this is worth knowing before
-adding one. Both images clone vcpkg with `git clone --depth 1`. A baseline that is not the commit
-that shallow clone landed on cannot be read, and vcpkg does not fetch it — it stops:
+Both images clone vcpkg's **`master`** branch — `ARG VCPKG_REF=master` — but that branch decides
+only which version of the vcpkg *tool* gets built. Which version of each *dependency* is installed
+is locked by [`vcpkg-configuration.json`](../vcpkg-configuration.json):
+
+```json
+{
+  "default-registry": {
+    "kind": "git",
+    "repository": "https://github.com/microsoft/vcpkg",
+    "baseline": "aae277acf4e7de287ddb5e208b5316614de6aad7"
+  }
+}
+```
+
+An image built today and one built next month therefore install the same fmt, the same ZeroMQ and
+the same LuaJIT, while master is free to move underneath. Bumping the dependency set is a one-line
+change to that baseline, reviewed like any other.
+
+**Why the git registry rather than `builtin-baseline`.** They express the same intent and only one
+of them works here. `builtin-baseline` is read out of the local `$VCPKG_ROOT` clone, and both images
+clone with `git clone --depth 1`; the moment master moves past the baseline, that commit is not in
+the shallow clone and vcpkg stops rather than fetching it:
 
 ```
-error: while checking out baseline from commit '283baca…', failed to `git show` versions/baseline.json.
+error: while checking out baseline from commit 'e58f8d7c…', failed to `git show` versions/baseline.json.
   This may be fixed by fetching commits with `git fetch`.
 ```
 
-Since the clone follows `VCPKG_REF`, which defaults to `master`, a baseline would break the build
-the first time vcpkg's master moved past it — which is a matter of hours.
+A `default-registry` of `kind: "git"` is fetched into vcpkg's own registry cache instead, so the
+shallow clone is irrelevant. Both were run against the same absent commit to be sure: the git
+registry resolved and named the exact port commits it had chosen, the `builtin-baseline` failed
+with the error above.
 
-The version pin is therefore `VCPKG_REF` itself. It is an `ARG` in both Dockerfiles, so pass the
-same commit to both when the dependency set has to be reproducible:
+`VCPKG_REF` remains an `ARG` in both Dockerfiles for the rarer case of pinning the tool itself:
 
 ```sh
 docker build -f .devcontainer/Dockerfile.ros2 --build-arg VCPKG_REF=<sha> -t hexapod-dev .
 docker build -f docker/Dockerfile             --build-arg VCPKG_REF=<sha> -t hexapod:latest .
 ```
 
-### An unfixed defect in the runtime image
+### The CMake version that used to break the runtime image
 
-`docker/Dockerfile` — the image that ships to the Pi, not the dev container — sets
-`VCPKG_FORCE_SYSTEM_BINARIES=1` for its whole builder stage. Its base image, `ros:jazzy-ros-base`,
-is Ubuntu 24.04 and carries **CMake 3.28.3**, so its vcpkg stage fails at the first port with the
-`STRING_ENCODE` error above, on x86-64 and on arm64 alike.
+`docker/Dockerfile` sets `VCPKG_FORCE_SYSTEM_BINARIES=1` for its whole builder stage, and its base
+image `ros:jazzy-ros-base` is Ubuntu 24.04 with **CMake 3.28.3**. That combination failed at the
+first port with the `STRING_ENCODE` error above, on x86-64 and arm64 alike — the image could not be
+built at all.
 
-Both halves of that were checked here: the CMake version, by running the base image, and the
-failure itself, by reproducing it on `ubuntu:24.04`. What was **not** run is a full
-`docker build -f docker/Dockerfile`.
-
-The fix is to delete that one line from the `ENV` block, exactly as the dev container now does. It
-is left in place deliberately: this document's change was scoped to `.devcontainer/`, and the
-runtime image is someone's decision to make, not a side effect of a dev-container cleanup.
+Both images now install CMake from Kitware, so the flag and the toolchain agree. The dev container
+had the same latent fault and gets the same fix, which is why the two blocks are identical.
 
 ```sh
-docker build -f docker/Dockerfile -t hexapod:latest .    # expected to fail until then
+docker build -f docker/Dockerfile -t hexapod:latest .
 ```
 
 ### The cppzmq hole this closed
@@ -611,8 +636,8 @@ images — but those images are the *whole* window, every repaint, over TCP.
 | Nothing arrives on `joint_command` | The sender's `PUB` socket drops what it sends before a subscriber has connected | Start the bridge first; the sender already sleeps 300 ms for this reason |
 | `fatal error: zmq.hpp` | An image older than the vcpkg change | Rebuild the container image; reopening it is not enough |
 | `-- Lua runtime: Lua 5.3` when you expected LuaJIT | The vcpkg tree is missing or the image is old | `pkg-config --modversion luajit` inside the container; if that fails, rebuild the image |
-| `string sub-command JSON got an invalid mode 'STRING_ENCODE'` while building the image | vcpkg was pointed at Ubuntu's CMake 3.28 | Do not set `VCPKG_FORCE_SYSTEM_BINARIES` — see [Apple Silicon](#macos-on-apple-silicon--m1-and-later) |
-| `failed to git show versions/baseline.json` | A `builtin-baseline` in `vcpkg.json` against a shallow clone | See [pinning the dependency set](#pinning-the-dependency-set) |
+| `string sub-command JSON got an invalid mode 'STRING_ENCODE'` while building the image | vcpkg was pointed at Ubuntu's CMake 3.28 | The Kitware apt source is missing or failed; check the `cmake --version` line in the build log — see [Apple Silicon](#macos-on-apple-silicon--m1-and-later) |
+| `failed to git show versions/baseline.json` | A `builtin-baseline` in `vcpkg.json` against a shallow clone | Use the git registry in `vcpkg-configuration.json` instead — see [locking the dependency versions](#locking-the-dependency-versions) |
 
 ## Verified, and not verified
 
@@ -632,8 +657,10 @@ images — but those images are the *whole* window, every repaint, over TCP.
 - `/joint_states` carries the eighteen URDF joint names listed above
 - `rviz2` obtains an OpenGL 4.5 context through llvmpipe
 - That `VCPKG_FORCE_SYSTEM_BINARIES=1` with Ubuntu 24.04's CMake 3.28 fails with the
-  `STRING_ENCODE` error quoted above, and that unsetting it succeeds
-- That a `builtin-baseline` other than the shallow clone's own commit fails to resolve
+  `STRING_ENCODE` error quoted above, and that the Kitware CMake fixes it
+- That `docker/Dockerfile` builds end to end, workspace included, which it could not do before
+- That the `vcpkg-configuration.json` git registry resolves a baseline the shallow clone does not
+  contain, and that a `builtin-baseline` at the same commit fails — run side by side
 
 **Not verified** — these need hardware this was not written on, and rest on how the tools are
 documented to work:
