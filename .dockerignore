@@ -1,0 +1,34 @@
+# Keep the build context small. Both images take the root of the workspace as
+# their context — .devcontainer/Dockerfile.ros2 for vcpkg.json, docker/Dockerfile
+# for vcpkg.json and src/ — so anything listed here is excluded from both.
+#
+# Nothing that either Dockerfile copies may appear below: vcpkg.json, src/ and
+# docker/entrypoint.sh all have to stay.
+
+# Build products of a host build. Copying them in would shadow the ones the
+# image builds for its own architecture.
+build/
+install/
+log/
+
+# History, editor and tooling state: never read during a build.
+.git/
+.github/
+.vscode/
+.idea/
+**/__pycache__/
+**/*.pyc
+
+# Documentation: not read by either build.
+doc/
+*.md
+
+# Reference photographs of the assembled robot. They sit under src/, so
+# docker/Dockerfile copies them into its builder stage, but they are not a ROS
+# package and never reach the runtime image.
+src/reference_img/
+
+# Deliberately NOT excluded: src/hexapod_description/meshes/*.blend. It is large
+# and nothing reads it at runtime, but install(DIRECTORY meshes) puts it in the
+# package share directory, so dropping it here would quietly change what the
+# image built by docker/Dockerfile ships.

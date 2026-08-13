@@ -26,9 +26,10 @@ pose left them, and the streamed poses resume once it has been quiet. See
 |---|---|
 | ROS 2 | Jazzy (any distribution works; nothing hard-codes one) |
 | Compiler | C++20, strict ISO, no GNU extensions |
-| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json` — see [`vcpkg.json`](vcpkg.json) |
-| System libraries | `liblua5.3-dev`, `libi2c-dev`, and `libzmq3-dev`, `libfmt-dev`, `nlohmann-json3-dev` when building without vcpkg |
-| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2) and [cppzmq](https://github.com/zeromq/cppzmq), when not already installed |
+| C++ packages | [vcpkg](https://vcpkg.io) manages `fmt`, `zeromq`, `cppzmq`, `eigen3`, `nlohmann-json`, `luajit`, `sol2` — see [`vcpkg.json`](vcpkg.json), with the versions pinned in [`vcpkg-configuration.json`](vcpkg-configuration.json) |
+| Lua runtime | [LuaJIT](https://luajit.org) when it is installed, the reference interpreter otherwise. The scripts in `config/` stay Lua 5.1 so both work |
+| System libraries | `libluajit-5.1-dev`, `liblua5.3-dev`, `libi2c-dev`, and `libzmq3-dev`, `libfmt-dev`, `nlohmann-json3-dev` when building without vcpkg |
+| Fetched at configure time | [sol2](https://github.com/ThePhD/sol2) and [cppzmq](https://github.com/zeromq/cppzmq), only when neither vcpkg nor the system provides them |
 | Workstation | Python with `pyzmq`, inside Maya or Blender |
 | Hardware | Raspberry Pi with I²C enabled, two PCA9685 boards, separate 5 V servo supply |
 
@@ -82,12 +83,16 @@ colcon build --symlink-install --packages-select hexapod_servomotor
 read from the install tree, so with symlinks an edit takes effect without
 rebuilding.
 
-To build against vcpkg rather than the system packages, point CMake at its
-toolchain — this is what the container image does:
+`build_exapod.sh` uses vcpkg automatically when `VCPKG_ROOT` points at a
+bootstrapped copy — which both the dev container and `docker/Dockerfile`
+install — and falls back to the system packages when it does not. To do it by
+hand:
 
 ```sh
 colcon build --cmake-args \
-    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+    -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+    -DVCPKG_MANIFEST_MODE=OFF \
+    -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED"
 ```
 
 Install the git hooks once per clone (the dev container does it for you):
@@ -230,6 +235,23 @@ ros2 launch hexapod_joypad hexapod_joypad.launch.py with_servos:=false
 ros2 topic echo /joypad/thumbstick
 ```
 
+### Without the robot, on a laptop
+
+The dev container carries its own display, so RViz works with nothing installed
+on the host — on Linux, on an Intel or Apple Silicon Mac, or on Windows, where
+Docker exposes neither a GPU nor an X socket:
+
+```sh
+bash scripts/start-gui.sh                          # already run for you on container start
+ros2 launch hexapod_description display.launch.py  # then open http://localhost:6080/vnc.html
+```
+
+![The hexapod URDF in RViz](doc/images/sim-rviz.png)
+
+See [running without a robot](doc/simulation.md) for the whole picture — what
+each host does differently, what can and cannot be simulated, the native-window
+route, and how to keep it smooth on an older machine.
+
 Individual pieces:
 
 ```sh
@@ -238,6 +260,9 @@ ros2 launch hexapod_servomotor hexapod_servomotor.launch.py
 
 # the URDF model in RViz, with joint sliders
 ros2 launch hexapod_description display.launch.py
+
+# a different RViz configuration
+ros2 launch hexapod_description display.launch.py rviz_config:=/path/to/other.rviz
 
 # a different joystick device, i.e. /dev/input/js1
 ros2 launch hexapod_joypad hexapod_joypad.launch.py device_id:=1
@@ -285,6 +310,7 @@ controller, follow [this guide](https://pimylifeup.com/raspberry-pi-playstation-
 | Document | Contents |
 |---|---|
 | [Setting up a Raspberry Pi](doc/raspberry-pi.md) | The install script, the supported image, I²C, build memory, troubleshooting |
+| [Running without a robot](doc/simulation.md) | RViz without a GPU on any host, the browser display, what can and cannot be simulated |
 | [Running in a container](doc/docker.md) | The multistage image, compose, vcpkg, what the container is given |
 | [The ZeroMQ bridge](doc/zeromq-bridge.md) | The animation link, the joypad override, the message format, parameters |
 | [Maya and Blender transport](doc/maya-blender-bridge.md) | Why ZeroMQ rather than gRPC, and where the bridge belongs |

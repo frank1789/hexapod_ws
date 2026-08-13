@@ -46,12 +46,17 @@ readonly -a PACKAGES_BASE=(
 )
 
 # The system libraries the workspace links against, plus the tools to inspect
-# the bus by hand. liblua5.3-dev is the development package on purpose:
-# find_package(Lua 5.3 REQUIRED) needs lua.h, the interpreter alone is not
-# enough. i2c-tools provides i2cdetect, used below to probe for the boards.
+# the bus by hand. i2c-tools provides i2cdetect, used below to probe for the
+# boards.
+#
+# Two Lua runtimes, deliberately. libluajit-5.1-dev is what CMake prefers and
+# what the node ends up running; liblua5.3-dev is the fallback when LuaJIT is
+# missing and is also where luac5.3 comes from, which the lua-syntax pre-commit
+# hook needs. Both are development packages on purpose — the headers are the
+# point, the interpreter alone is not enough.
 #
 # libzmq3-dev, libfmt-dev and nlohmann-json3-dev are what hexapod_bridge needs.
-# vcpkg is the intended source for all three (see vcpkg.json), but a native
+# vcpkg is the intended source for all of them (see vcpkg.json), but a native
 # build on the Pi should not have to compile them from scratch, so the apt
 # packages are installed as well and CMake takes whichever it finds. cppzmq is
 # the exception: Debian does not package that single header, so the build
@@ -60,6 +65,7 @@ readonly -a PACKAGES_PROJECT=(
   i2c-tools
   libfmt-dev
   libi2c-dev
+  libluajit-5.1-dev
   liblua5.3-dev
   libzmq3-dev
   lua5.3

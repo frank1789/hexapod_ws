@@ -34,10 +34,29 @@ ENV VCPKG_ROOT=/opt/vcpkg \
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # curl, zip, unzip and tar are vcpkg's own requirements; the rest is what the
-# workspace needs to compile. liblua5.3-dev carries lua.h, which
-# find_package(Lua 5.3 REQUIRED) needs and the interpreter package does not.
-# cmake is installed from Kitware's APT repository to get the latest version.
+# workspace needs to compile. liblua5.3-dev carries lua.h, which the reference
+# Lua fallback needs and the interpreter package does not; LuaJIT, which CMake
+# prefers, comes from vcpkg.
+#
+# CMake comes from Kitware rather than Ubuntu, and it is what makes
+# VCPKG_FORCE_SYSTEM_BINARIES above workable. vcpkg's port scripts call
+# string(JSON ... STRING_ENCODE), which arrived in CMake 3.31; this image's base
+# carries 3.28, and against it vcpkg fails on the first port before compiling a
+# line:
+#
+#   CMake Error at scripts/cmake/z_vcpkg_spdx.cmake:15 (string):
+#     string sub-command JSON got an invalid mode 'STRING_ENCODE'
+#
+# Kitware publishes noble packages for arm64 as well as amd64, so this works
+# whether the image is built on the Pi or cross-built on a workstation. The same
+# block is in .devcontainer/Dockerfile.ros2; keep the two in step.
 RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && curl -fsSL https://apt.kitware.com/keys/kitware-archive-latest.asc \
+        -o /usr/share/keyrings/kitware-archive-keyring.asc \
+    && echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.asc] https://apt.kitware.com/ubuntu/ $(. /etc/os-release && echo "${VERSION_CODENAME}") main" \
+        > /etc/apt/sources.list.d/kitware.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -59,15 +78,25 @@ RUN apt-get update \
         tar \
         unzip \
         zip \
+    && cmake --version \
     && rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth 1 --branch "${VCPKG_REF}" https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}" \
     && "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
 
-# Only the manifest is copied first, so editing a source file does not throw
-# away the hours of third-party compilation cached in this layer.
+# Only the manifest and its configuration are copied first, so editing a source
+# file does not throw away the hours of third-party compilation cached in this
+# layer.
+#
+# vcpkg-configuration.json pins the port versions to a baseline commit of the
+# microsoft/vcpkg git registry, which vcpkg fetches into its own cache. The
+# clone above tracks master and supplies only the tool, so an image built today
+# and one built next month install the same dependency versions. A
+# builtin-baseline would express the same intent and cannot be used here: it is
+# read out of the shallow clone, which stops containing the commit the moment
+# master moves.
 WORKDIR /ws
-COPY vcpkg.json /ws/vcpkg.json
+COPY vcpkg.json vcpkg-configuration.json /ws/
 
 # The triplet follows the architecture of the machine doing the build, which is
 # what makes the same Dockerfile work on arm64 and on an x86 workstation.

@@ -63,6 +63,34 @@ ros2 run hexapod_servomotor hexapod_servomotor_node --ros-args \
     -p perform_startup_test:=true
 ```
 
+## Which Lua runs the scripts
+
+Two interpreters can execute them, and CMake decides at configure time:
+
+| | |
+|---|---|
+| **LuaJIT** | Preferred. Found through pkg-config, from vcpkg or from `libluajit-5.1-dev`. sol2 is told about it with `SOL_LUAJIT=1` |
+| Reference Lua | The fallback, `liblua5.3-dev`. Also where `luac5.3` comes from |
+
+The configure log says which one won:
+
+```
+-- Lua runtime: LuaJIT 2.1.1748459687
+```
+
+Force the fallback with `-DHEXAPOD_ENABLE_LUAJIT=OFF` if a script ever needs
+something LuaJIT does not have.
+
+> **Keep the scripts Lua 5.1.** LuaJIT tracks 5.1, so integer division `//`,
+> `goto`, the bitwise operators and the 5.3 integer subtype are all unavailable
+> on the robot. `luac5.3 -p` — what the `lua-syntax` pre-commit hook runs —
+> accepts them happily, so the hook will not catch the mistake. The two scripts
+> in `config/` use nothing outside 5.1 today; keep it that way.
+
+What LuaJIT buys here is honest but small: both scripts run once, at start-up,
+to build an eighteen-entry table. The gain matters if Lua ever moves into the
+write loop, and costs nothing until then.
+
 ## The motor table: `motors.lua`
 
 The C++ side does not know the robot's anatomy. It calls

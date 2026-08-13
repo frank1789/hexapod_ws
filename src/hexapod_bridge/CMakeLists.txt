@@ -46,6 +46,8 @@ find_package(sensor_msgs REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
+set(HEXAPOD_ZMQ_INCLUDE_DIRS "")
+
 find_package(cppzmq CONFIG QUIET)
 if(cppzmq_FOUND)
   set(HEXAPOD_ZMQ_TARGET cppzmq)
@@ -64,8 +66,19 @@ else()
       CACHE BOOL "" FORCE)
   FetchContent_MakeAvailable(cppzmq)
 
+  # cppzmq is a single header, and its own CMakeLists puts the include directory
+  # on an INTERFACE target that also links a `libzmq` CMake target. That target
+  # only exists when ZeroMQ's config package was found — which is precisely the
+  # case this branch is here to cover — so linking it would fail. Take the
+  # header directory and pair it with the pkg-config target instead.
+  #
+  # Without this the header is downloaded and then never reached: the build
+  # failed with "fatal error: zmq.hpp: No such file or directory" while the file
+  # sat in _deps/cppzmq-src.
   set(HEXAPOD_ZMQ_TARGET PkgConfig::LIBZMQ)
-  message(STATUS "cppzmq fetched; ZeroMQ taken from pkg-config")
+  set(HEXAPOD_ZMQ_INCLUDE_DIRS "${cppzmq_SOURCE_DIR}")
+  message(
+    STATUS "cppzmq fetched into ${cppzmq_SOURCE_DIR}; ZeroMQ from pkg-config")
 endif()
 
 # --- Libraries --------------------------------------------------------------
@@ -76,7 +89,8 @@ target_include_directories(bridge_core PUBLIC include)
 target_link_libraries(bridge_core PUBLIC fmt::fmt nlohmann_json::nlohmann_json)
 
 add_executable(${PROJECT_NAME}_node src/main.cc src/bridge_node.cc)
-target_include_directories(${PROJECT_NAME}_node PRIVATE include)
+target_include_directories(${PROJECT_NAME}_node
+                           PRIVATE include ${HEXAPOD_ZMQ_INCLUDE_DIRS})
 target_link_libraries(
   ${PROJECT_NAME}_node
   PRIVATE bridge_core rclcpp::rclcpp ${hexapod_msgs_TARGETS}

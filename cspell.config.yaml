@@ -225,6 +225,38 @@ words:
   - SIGPIPE
   - GNUCXX
   - kitware
+  # desktop, X11 and software rendering, for running the GUI tools in a container
+  - dofile
+  - fluxbox
+  - GLSL
+  - ipairs
+  - libgallium
+  - libgl
+  - llvmpipe
+  - MITSHM
+  - nopw
+  - novnc
+  - pgrep
+  - rfbport
+  - Rosetta
+  - swrast
+  - websockify
+  - WSLg
+  - xdpyinfo
+  - xhost
+  - xquartz
+  - Xvfb
+  # the LuaJIT runtime and the vcpkg toolchain, spelled as the packages are
+  - aarch
+  - buildtrees
+  - Dockerfiles
+  - glxinfo
+  - Kitware
+  - libluajit
+  - libspdlog
+  - luajit
+  - LUAJIT
+  - modversion
   # known misspellings that are part of an interface, see CLAUDE.md
   - magnitute
   - exapod

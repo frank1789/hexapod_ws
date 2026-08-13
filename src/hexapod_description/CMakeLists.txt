@@ -4,8 +4,9 @@ project(hexapod_description)
 find_package(ament_cmake REQUIRED)
 
 # The URDF refers to its meshes through package:// URIs, so meshes and urdf must
-# both end up in the package share directory.
-install(DIRECTORY launch meshes urdf DESTINATION share/${PROJECT_NAME})
+# both end up in the package share directory. display.launch.py resolves the
+# RViz configuration the same way, so rviz belongs here as well.
+install(DIRECTORY launch meshes rviz urdf DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest REQUIRED)

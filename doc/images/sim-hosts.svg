@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 540" width="900" height="540" role="img"
+     aria-label="Four host platforms and how each one reaches the graphical tools in the dev container. A Linux host runs the container natively and can either share its own X socket or use the shipped browser display. An Intel Mac runs an x86-64 container inside the Docker Desktop virtual machine and uses the browser display. An Apple Silicon Mac runs an arm64 container natively inside that virtual machine, again with the browser display. Windows with WSL2 can use WSLg for native windows or the browser display. In every case the 3D rendering is done on the CPU by Mesa llvmpipe, because no host passes a GPU into the container.">
+  <rect x="0" y="0" width="900" height="540" fill="#ffffff"/>
+  <g font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-size="13" fill="#1b1f23">
+
+    <text x="16" y="26" font-size="15" font-weight="bold">One dev container, four hosts</text>
+    <text x="16" y="44" font-size="11" fill="#57606a">the container is the same everywhere; only the architecture it is built for and the way out of it change</text>
+
+    <!-- column headings -->
+    <text x="121" y="72" text-anchor="middle" font-size="10" fill="#57606a">host</text>
+    <text x="364" y="72" text-anchor="middle" font-size="10" fill="#57606a">container</text>
+    <text x="694" y="72" text-anchor="middle" font-size="10" fill="#57606a">how you see RViz</text>
+
+    <!-- ================= row 1: Linux ================= -->
+    <rect x="16" y="82" width="210" height="88" rx="6" fill="#eaf6ec" stroke="#1a7f37"/>
+    <text x="121" y="106" text-anchor="middle" font-weight="bold" fill="#1a7f37">Linux</text>
+    <text x="121" y="126" text-anchor="middle" font-size="11" fill="#57606a">x86-64 or arm64</text>
+    <text x="121" y="146" text-anchor="middle" font-size="10" fill="#57606a">no virtual machine</text>
+    <text x="121" y="161" text-anchor="middle" font-size="10" fill="#57606a">in the way</text>
+
+    <line x1="226" y1="126" x2="248" y2="126" stroke="#57606a" stroke-width="2"/>
+    <polygon points="248,126 240,122 240,130" fill="#57606a"/>
+
+    <rect x="252" y="82" width="225" height="88" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="364" y="106" text-anchor="middle" font-size="12" font-weight="bold">native, host arch</text>
+    <text x="364" y="126" text-anchor="middle" font-size="10" fill="#57606a">triplet from uname -m:</text>
+    <text x="364" y="142" text-anchor="middle" font-size="10" fill="#57606a">x64-linux or arm64-linux</text>
+    <text x="364" y="160" text-anchor="middle" font-size="10" fill="#1a7f37">full speed</text>
+
+    <line x1="477" y1="126" x2="499" y2="126" stroke="#57606a" stroke-width="2"/>
+    <polygon points="499,126 491,122 491,130" fill="#57606a"/>
+
+    <rect x="503" y="82" width="381" height="88" rx="6" fill="#ffffff" stroke="#1a7f37"/>
+    <text x="519" y="104" font-size="11" font-weight="bold" fill="#1a7f37">the host X socket, or the browser display</text>
+    <text x="519" y="123" font-size="10" fill="#57606a">Mount /tmp/.X11-unix and set DISPLAY, and RViz is an ordinary</text>
+    <text x="519" y="138" font-size="10" fill="#57606a">window — with a real GPU if the host has one.</text>
+    <text x="519" y="158" font-size="10" fill="#8250df">the only platform where hardware rendering is available</text>
+
+    <!-- ================= row 2: Intel Mac ================= -->
+    <rect x="16" y="182" width="210" height="88" rx="6" fill="#eef4fb" stroke="#0969da"/>
+    <text x="121" y="206" text-anchor="middle" font-weight="bold" fill="#0969da">MacBook Pro, Intel</text>
+    <text x="121" y="226" text-anchor="middle" font-size="11" fill="#57606a">2016 &#8211; 2020</text>
+    <text x="121" y="246" text-anchor="middle" font-size="10" fill="#57606a">Docker Desktop runs</text>
+    <text x="121" y="261" text-anchor="middle" font-size="10" fill="#57606a">Linux in a VM</text>
+
+    <line x1="226" y1="226" x2="248" y2="226" stroke="#57606a" stroke-width="2"/>
+    <polygon points="248,226 240,222 240,230" fill="#57606a"/>
+
+    <rect x="252" y="182" width="225" height="88" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="364" y="206" text-anchor="middle" font-size="12" font-weight="bold">x86-64, in the VM</text>
+    <text x="364" y="226" text-anchor="middle" font-size="10" fill="#57606a">triplet x64-linux</text>
+    <text x="364" y="244" text-anchor="middle" font-size="10" fill="#cf222e">no GPU is passed through</text>
+    <text x="364" y="261" text-anchor="middle" font-size="10" fill="#57606a">2 &#8211; 4 cores, give it 4</text>
+
+    <line x1="477" y1="226" x2="499" y2="226" stroke="#57606a" stroke-width="2"/>
+    <polygon points="499,226 491,222 491,230" fill="#57606a"/>
+
+    <rect x="503" y="182" width="381" height="88" rx="6" fill="#f6fbf7" stroke="#1a7f37" stroke-width="2"/>
+    <text x="519" y="204" font-size="11" font-weight="bold" fill="#1a7f37">the browser display &#8212; what this workspace ships</text>
+    <text x="519" y="223" font-size="10" fill="#57606a">Xvfb + fluxbox + x11vnc + websockify, started for you.</text>
+    <text x="519" y="238" font-size="10" fill="#57606a">Open http://localhost:6080/vnc.html. Nothing to install on the Mac.</text>
+    <text x="519" y="258" font-size="10" fill="#8250df">only changed rectangles cross the VM boundary, compressed</text>
+
+    <!-- ================= row 3: Apple Silicon ================= -->
+    <rect x="16" y="282" width="210" height="88" rx="6" fill="#f6effc" stroke="#8250df"/>
+    <text x="121" y="306" text-anchor="middle" font-weight="bold" fill="#8250df">MacBook Pro, Apple Silicon</text>
+    <text x="121" y="326" text-anchor="middle" font-size="11" fill="#57606a">M1 and later</text>
+    <text x="121" y="346" text-anchor="middle" font-size="10" fill="#57606a">Docker Desktop runs</text>
+    <text x="121" y="361" text-anchor="middle" font-size="10" fill="#57606a">Linux in a VM</text>
+
+    <line x1="226" y1="326" x2="248" y2="326" stroke="#57606a" stroke-width="2"/>
+    <polygon points="248,326 240,322 240,330" fill="#57606a"/>
+
+    <rect x="252" y="282" width="225" height="88" rx="6" fill="#f6f8fa" stroke="#8250df"/>
+    <text x="364" y="306" text-anchor="middle" font-size="12" font-weight="bold" fill="#8250df">arm64, natively</text>
+    <text x="364" y="326" text-anchor="middle" font-size="10" fill="#57606a">triplet arm64-linux</text>
+    <text x="364" y="344" text-anchor="middle" font-size="10" fill="#1a7f37">no Rosetta, no emulation</text>
+    <text x="364" y="361" text-anchor="middle" font-size="10" fill="#57606a">more cores, and faster ones</text>
+
+    <line x1="477" y1="326" x2="499" y2="326" stroke="#57606a" stroke-width="2"/>
+    <polygon points="499,326 491,322 491,330" fill="#57606a"/>
+
+    <rect x="503" y="282" width="381" height="88" rx="6" fill="#f6fbf7" stroke="#1a7f37" stroke-width="2"/>
+    <text x="519" y="304" font-size="11" font-weight="bold" fill="#1a7f37">the browser display, and it is the fastest of the three</text>
+    <text x="519" y="323" font-size="10" fill="#57606a">Identical setup to the Intel Mac; llvmpipe simply has more CPU.</text>
+    <text x="519" y="338" font-size="10" fill="#57606a">Kitware serves arm64 too, so vcpkg gets the CMake version it needs.</text>
+    <text x="519" y="358" font-size="10" fill="#8250df">every port is compiled for arm64 &#8212; no emulation in the build at all</text>
+
+    <!-- ================= row 4: Windows ================= -->
+    <rect x="16" y="382" width="210" height="88" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="121" y="406" text-anchor="middle" font-weight="bold">Windows 10 / 11</text>
+    <text x="121" y="426" text-anchor="middle" font-size="11" fill="#57606a">with WSL2</text>
+    <text x="121" y="446" text-anchor="middle" font-size="10" fill="#57606a">not exercised here</text>
+
+    <line x1="226" y1="426" x2="248" y2="426" stroke="#57606a" stroke-width="2"/>
+    <polygon points="248,426 240,422 240,430" fill="#57606a"/>
+
+    <rect x="252" y="382" width="225" height="88" rx="6" fill="#f6f8fa" stroke="#57606a"/>
+    <text x="364" y="406" text-anchor="middle" font-size="12" font-weight="bold">x86-64, in WSL2</text>
+    <text x="364" y="426" text-anchor="middle" font-size="10" fill="#57606a">triplet x64-linux</text>
+    <text x="364" y="446" text-anchor="middle" font-size="10" fill="#57606a">keep the clone inside WSL2,</text>
+    <text x="364" y="461" text-anchor="middle" font-size="10" fill="#57606a">not on /mnt/c</text>
+
+    <line x1="477" y1="426" x2="499" y2="426" stroke="#57606a" stroke-width="2"/>
+    <polygon points="499,426 491,422 491,430" fill="#57606a"/>
+
+    <rect x="503" y="382" width="381" height="88" rx="6" fill="#ffffff" stroke="#57606a"/>
+    <text x="519" y="404" font-size="11" font-weight="bold">WSLg, or the browser display</text>
+    <text x="519" y="423" font-size="10" fill="#57606a">WSLg supplies a Wayland/X server, so RViz can be a normal window.</text>
+    <text x="519" y="438" font-size="10" fill="#57606a">The browser display works unchanged and is the tested path.</text>
+    <text x="519" y="458" font-size="10" fill="#8250df">documented from how the tools work; not run on a Windows host</text>
+
+    <!-- footer -->
+    <rect x="16" y="484" width="868" height="42" rx="6" fill="#fff8e6" stroke="#9a6700"/>
+    <text x="30" y="503" font-size="11" font-weight="bold" fill="#9a6700">Common to all four:</text>
+    <text x="152" y="503" font-size="11" fill="#1b1f23">RViz renders through Mesa llvmpipe, on the CPU, inside the container.</text>
+    <text x="30" y="519" font-size="10" fill="#57606a">Only a Linux host sharing its own X socket can do better, and only then. Everything else in this workspace is identical on every platform.</text>
+
+  </g>
+</svg>

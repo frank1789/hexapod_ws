@@ -14,10 +14,11 @@ docker compose --profile dry up   # no I2C hardware
 ```
 ┌─ builder ────────────────────────────────┐    ┌─ runtime ──────────────────┐
 │ ros:jazzy-ros-base                       │    │ ros:jazzy-ros-base         │
-│  + compiler, cmake, ninja, git           │    │  + libi2c0, liblua5.3-0    │
-│  + vcpkg  ── fmt, ZeroMQ, cppzmq,        │──▶ │  + joy, robot_state_pub    │
-│              Eigen, nlohmann-json        │    │                            │
-│  + colcon build --merge-install          │    │  COPY /ws/install          │
+│  + compiler, ninja, git                  │    │  + libi2c0, liblua5.3-0    │
+│  + cmake from Kitware (vcpkg needs ≥3.31)│──▶ │  + joy, robot_state_pub    │
+│  + vcpkg  ── fmt, ZeroMQ, cppzmq, Eigen, │    │                            │
+│              nlohmann-json, LuaJIT, sol2 │    │  COPY /ws/install          │
+│  + colcon build --merge-install          │    │                            │
 └──────────────────────────────────────────┘    └────────────────────────────┘
       discarded: sources, objects, vcpkg              shipped to the robot
 ```
@@ -25,6 +26,11 @@ docker compose --profile dry up   # no I2C hardware
 The compiler, vcpkg's build trees and the workspace sources never reach the
 runtime image. vcpkg links its libraries statically, so fmt, ZeroMQ and the rest
 need no runtime packages at all; only Lua and I2C come from the distribution.
+
+CMake comes from Kitware rather than from Ubuntu because vcpkg's port scripts
+call `string(JSON ... STRING_ENCODE)`, which needs CMake 3.31; the base image
+carries 3.28. `.devcontainer/Dockerfile.ros2` does the same thing for the same
+reason — see [running without a robot](simulation.md#macos-on-apple-silicon--m1-and-later).
 
 ## Layer order is the maintenance story
 
