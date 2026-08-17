@@ -259,6 +259,7 @@ words:
   - luajit
   - LUAJIT
   - modversion
+  - libeigen
   # known misspellings that are part of an interface, see CLAUDE.md
   - magnitute
   - exapod
