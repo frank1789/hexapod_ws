@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.26)
-
 project(hexapod_model LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,15 +14,18 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(hexapod_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(sensors_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(eigen3 CONFIG REQUIRED)
 
 set(LIBRARY_TARGET_NAME hexapod_model)
+add_library(${LIBRARY_TARGET_NAME} STATIC)
 target_sources(
   ${LIBRARY_TARGET_NAME}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cc
+  PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cc
           ${CMAKE_CURRENT_SOURCE_DIR}/src/leg_model.cc
   PUBLIC FILE_SET
          HEADERS
