@@ -82,11 +82,11 @@ struct LegGeometry {
 /**
  * @brief Foot position in the hip frame for a joint triple.
  *
- * @param lg the leg's constants
- * @param q coxa, femur, tibia in radians, URDF sign convention
+ * @param geometry the leg's constants
+ * @param joints coxa, femur, tibia in radians, URDF sign convention
  * @return foot position in the hip frame, metres
  */
-[[nodiscard]] Eigen::Vector3d ForwardKinematics(const LegGeometry& lg, const Eigen::Vector3d& q) noexcept;
+[[nodiscard]] Eigen::Vector3d ForwardKinematics(const LegGeometry& geometry, const Eigen::Vector3d& joints) noexcept;
 
 /**
  * @brief Foot position and the 3×3 Jacobian d(foot)/d(q) at the same pose.
@@ -101,11 +101,12 @@ struct LegState {
 /**
  * @brief ForwardKinematics(), plus the analytic Jacobian at that pose.
  *
- * @param lg the leg's constants
- * @param q coxa, femur, tibia in radians, URDF sign convention
- * @return the foot position and d(foot)/d(q)
+ * @param geometry the leg's constants
+ * @param joints coxa, femur, tibia in radians, URDF sign convention
+ * @return the foot position and d(foot)/d(joints)
  */
-[[nodiscard]] LegState ForwardKinematicsWithJacobian(const LegGeometry& lg, const Eigen::Vector3d& q) noexcept;
+[[nodiscard]] LegState ForwardKinematicsWithJacobian(const LegGeometry& geometry,
+                                                     const Eigen::Vector3d& joints) noexcept;
 
 /** @brief Outcome of an inverse-kinematic request */
 enum class InverseKinematicsStatus : std::uint8_t { Success, Unreachable, LimitViolation };
@@ -114,7 +115,8 @@ enum class InverseKinematicsStatus : std::uint8_t { Success, Unreachable, LimitV
  * @brief What InverseKinematics() worked out, and whether it is usable.
  *
  * `q` is only meaningful when Ok() is true. On LimitViolation it still carries
- * the un-clamped solution, so a caller can report how far out of range it was.
+ * the solution as computed, with no clamping applied, so a caller can report
+ * how far out of range the request was.
  */
 struct InverseKinematicsResult {
   Eigen::Vector3d q{Eigen::Vector3d::Zero()};
@@ -126,15 +128,33 @@ struct InverseKinematicsResult {
 /**
  * @brief The joint triple that puts the foot on a target, or why it cannot.
  *
- * This is the exact analytic inverse of ForwardKinematics(). Of the two elbow
- * configurations that reach any given point, it returns the one that bends the
- * same way as the robot's rest pose, so a solved pose never flips the knee.
+ * The analytic inverse of ForwardKinematics(). A foot position does not name a
+ * unique pose, so two branches are chosen here, and both are choices a caller
+ * can see the consequences of:
  *
- * @param lg the leg's constants
+ * 1. **Elbow.** Two configurations reach any given point. The one returned
+ *    bends the way the rest pose does, so a solved pose never flips the knee
+ *    mid-stride. Representing a pose therefore needs its femur-to-tibia angle
+ *    in (-pi, 0), which every pose within the configured travel satisfies on
+ *    this robot.
+ * 2. **Outward reach.** The leg is taken to extend away from the coxa axis
+ *    rather than folded back across it. The folded pose puts the foot in the
+ *    same place but needs a coxa angle a further pi round, which is outside the
+ *    +/-1.5708 travel the URDF gives every joint. Feeding this function a foot
+ *    position produced by such a pose therefore returns the reachable
+ *    equivalent, not the pose it started from.
+ *
+ * In both cases the foot lands where it was asked to; only the joint triple
+ * differs, so `ForwardKinematics(g, InverseKinematics(g, t).q) == t` always
+ * holds while `InverseKinematics(g, ForwardKinematics(g, q)).q == q` holds only
+ * on the branch above.
+ *
+ * @param geometry the leg's constants
  * @param target foot position in the hip frame, metres
  * @return the joints and the status; see InverseKinematicsResult
  */
-[[nodiscard]] InverseKinematicsResult InverseKinematics(const LegGeometry& lg, const Eigen::Vector3d& target) noexcept;
+[[nodiscard]] InverseKinematicsResult InverseKinematics(const LegGeometry& geometry,
+                                                        const Eigen::Vector3d& target) noexcept;
 
 }  // namespace hexapod::model
 

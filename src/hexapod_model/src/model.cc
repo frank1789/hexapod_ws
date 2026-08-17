@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <utility>
 #include <vector>
 
 namespace hexapod::model {
@@ -34,7 +35,7 @@ struct GroundPoint {
  * dominates and neither is worth optimising.
  */
 [[nodiscard]] std::vector<GroundPoint> ConvexHull(std::vector<GroundPoint> points) {
-  std::sort(points.begin(), points.end(), [](const GroundPoint& lhs, const GroundPoint& rhs) {
+  std::ranges::sort(points, [](const GroundPoint& lhs, const GroundPoint& rhs) {
     return lhs.x < rhs.x || (lhs.x == rhs.x && lhs.y < rhs.y);
   });
 
@@ -63,11 +64,10 @@ struct GroundPoint {
 
 }  // namespace
 
-HexapodModel::HexapodModel(const RobotConfiguration& configuration) noexcept : configuration_{configuration} {}
+HexapodModel::HexapodModel(RobotConfiguration configuration) noexcept : configuration_{std::move(configuration)} {}
 
 bool HexapodModel::IsUsable() const noexcept {
-  return std::all_of(configuration_.begin(), configuration_.end(),
-                     [](const LegConfiguration& leg) { return leg.geometry.IsUsable(); });
+  return std::ranges::all_of(configuration_, [](const LegConfiguration& leg) { return leg.geometry.IsUsable(); });
 }
 
 bool HexapodModel::SolveJoints(const BodyPose& body, const FootArray& feet_world, JointArray* joints,
@@ -127,7 +127,7 @@ double HexapodModel::StabilityMargin(const Eigen::Vector3d& com_world, const Foo
       // An out-of-range index is a caller error, not a geometry to guess at.
       return kNoSupport;
     }
-    points.push_back(GroundPoint{feet_world.at(leg).x(), feet_world.at(leg).y()});
+    points.push_back(GroundPoint{.x = feet_world.at(leg).x(), .y = feet_world.at(leg).y()});
   }
 
   const std::vector<GroundPoint> hull = ConvexHull(std::move(points));
@@ -138,22 +138,25 @@ double HexapodModel::StabilityMargin(const Eigen::Vector3d& com_world, const Foo
 
   // Distance to the nearest edge, signed positive towards the interior. The
   // hull is counter-clockwise, so the interior is to the left of every edge.
-  const GroundPoint centre{com_world.x(), com_world.y()};
+  const GroundPoint centre{.x = com_world.x(), .y = com_world.y()};
   double margin = std::numeric_limits<double>::infinity();
 
   for (std::size_t i = 0; i < hull.size(); ++i) {
     const GroundPoint& from = hull.at(i);
-    const GroundPoint& to = hull.at((i + 1) % hull.size());
+    const GroundPoint& next = hull.at((i + 1) % hull.size());
 
-    const double edge_x = to.x - from.x;
-    const double edge_y = to.y - from.y;
+    const double edge_x = next.x - from.x;
+    const double edge_y = next.y - from.y;
     const double length = std::hypot(edge_x, edge_y);
     if (length == 0.0) {
       continue;
     }
 
-    const double signed_distance = (((centre.y - from.y) * edge_x) - ((centre.x - from.x) * edge_y)) / length;
-    margin = std::min(margin, -signed_distance);
+    // Cross product of the edge with the vector to the centre: positive when
+    // the centre is to the left of the edge, which for a counter-clockwise hull
+    // is the interior.
+    const double signed_distance = ((edge_x * (centre.y - from.y)) - (edge_y * (centre.x - from.x))) / length;
+    margin = std::min(margin, signed_distance);
   }
 
   return margin;

@@ -85,7 +85,7 @@ class HexapodModel {
    *
    * @param configuration the six legs, in LegIndex order
    */
-  explicit HexapodModel(const RobotConfiguration& configuration) noexcept;
+  explicit HexapodModel(RobotConfiguration configuration) noexcept;
 
   /**
    * @brief Whether every leg was configured with a solvable geometry.
