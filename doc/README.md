@@ -11,6 +11,7 @@
 | [The PCA9685 servo board](pca9685.md) | How the hardware generates PWM, its registers and timing, the wiring, and what the driver validates |
 | [Configuring the robot](configuration.md) | Every node parameter, the two Lua scripts, how to tune the pulse limits, and how to read the logs |
 | [Architecture](architecture.md) | The four packages, the topics between them, and how failures are handled |
+| [What the kinematic model costs](kinematics-performance.md) | Why there are no `-mavx2` flags, what a six-leg solve actually costs, and where the real bottleneck is |
 
 Build, install and run instructions are in the [top-level README](../README.md).
 Working rules for this repository — coding standard, error handling and the

@@ -118,6 +118,16 @@ words:
   - respawn
   # compiler, linker and shell flags
   - Wextra
+  - mavx
+  - mfma
+  - mcpu
+  - mfpu
+  - march
+  - mtune
+  - DEIGEN
+  - DONT
+  - NDEBUG
+  - DNDEBUG
   - Wpedantic
   - Wreorder
   - fsyntax
@@ -193,6 +203,11 @@ words:
   - keyframed
   - pyzmq
   - Eigen
+  - Quaterniond
+  - vectorisable
+  - vectorises
+  - vzeroupper
+  - libm
   - RCUTILS
   - healthcheck
   - dontwait
