@@ -18,7 +18,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(hexapod_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(eigen3 CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 
 set(LIBRARY_TARGET_NAME hexapod_model)
 add_library(${LIBRARY_TARGET_NAME} STATIC)
