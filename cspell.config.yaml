@@ -25,6 +25,8 @@ words:
   - servomotor
   - servomotors
   - servoconfiguration
+  - Denvit
+  - Hartenberg
   # ROS 2 and its tooling
   - rclcpp
   - rosidl
