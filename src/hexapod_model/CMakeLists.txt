@@ -21,12 +21,25 @@ find_package(sensors_msgs REQUIRED)
 find_package(eigen3 CONFIG REQUIRED)
 
 set(LIBRARY_TARGET_NAME hexapod_model)
-set(EXECUTABLE_TARGET_NAME "${LIBRARY_TARGET_NAME}_node")
+target_sources(
+  ${LIBRARY_TARGET_NAME}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cc
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/leg_model.cc
+  PUBLIC FILE_SET
+         HEADERS
+         BASE_DIRS
+         ${CMAKE_CURRENT_SOURCE_DIR}/include
+         FILES
+         ${CMAKE_CURRENT_SOURCE_DIR}/include/body_pose.h
+         ${CMAKE_CURRENT_SOURCE_DIR}/include/hip_mount.h
+         ${CMAKE_CURRENT_SOURCE_DIR}/include/leg_model.h)
 
-add_executable(${EXECUTABLE_TARGET_NAME})
+set(EXECUTABLE_TARGET_NAME "${LIBRARY_TARGET_NAME}_node")
+add_executable(${EXECUTABLE_TARGET_NAME}
+               ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
 target_link_libraries(
   ${EXECUTABLE_TARGET_NAME} PRIVATE rclcpp::rclcpp ${sensor_msgs_TARGETS}
-                                    ${hexapod_msgs_TARGETS})
+                                    ${hexapod_msgs_TARGETS} hexapod_model)
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
