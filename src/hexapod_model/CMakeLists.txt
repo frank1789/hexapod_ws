@@ -5,8 +5,6 @@ if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 endif()
-# Strict ISO C++20: no GNU extensions, so the code stays portable across
-# compilers (-std=c++20 rather than -std=gnu++20).
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # --- Static analysis --------------------------------------------------------
@@ -39,15 +37,7 @@ find_package(rclcpp REQUIRED)
 # the intended source: vcpkg.json pins eigen3, and a build configured with the
 # vcpkg toolchain resolves it out of /opt/vcpkg_installed.
 #
-# The spelling matters and is easy to get wrong. The *port* is called `eigen3`,
-# which is what vcpkg.json lists, but the CMake config package it installs is
-# `Eigen3Config.cmake`. CMake's config mode only looks for `<Name>Config.cmake`
-# and `<lowercase-name>-config.cmake`, so `find_package(eigen3 CONFIG)` searches
-# for a file that does not exist and fails on any case-sensitive filesystem:
-#
-#   Could not find a package configuration file provided by "eigen3"
-#
-# Configuring without vcpkg still works — ROS pulls libeigen3-dev in
+# Configuring without vcpkg still works — ROS pulls lib eigen3-dev in
 # transitively, and it installs the same Eigen3 config package under
 # /usr/share/eigen3/cmake — so a native build on the Pi needs nothing extra.
 # With the vcpkg toolchain the manifest copy wins, which is the point.
@@ -121,19 +111,18 @@ endif()
 # stand up first.
 set(LIBRARY_TARGET_NAME hexapod_model)
 add_library(${LIBRARY_TARGET_NAME} STATIC)
-target_sources(
-  ${LIBRARY_TARGET_NAME}
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/leg_model.cc
-          ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cc
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include
-         FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/body_pose.h
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/hip_mount.h
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/leg_model.h
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/model.h)
+target_sources(${LIBRARY_TARGET_NAME}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/leg_model.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/model.cc
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+    FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/body_pose.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/hip_mount.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/leg_model.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/model.h)
 
 # PUBLIC: the headers include <Eigen/Core> and <Eigen/Geometry>, so anything
 # linking this library needs the same include path. Linking the namespaced
@@ -143,16 +132,15 @@ target_link_libraries(${LIBRARY_TARGET_NAME} PUBLIC Eigen3::Eigen)
 
 # The only part of the package that reads a file or knows about ROS.
 set(CONFIG_TARGET_NAME ${LIBRARY_TARGET_NAME}_config)
-add_library(${CONFIG_TARGET_NAME} STATIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/configuration_loader.cc)
-target_sources(
-  ${CONFIG_TARGET_NAME}
-  PUBLIC FILE_SET
-         HEADERS
-         BASE_DIRS
-         ${CMAKE_CURRENT_SOURCE_DIR}/include
-         FILES
-         ${CMAKE_CURRENT_SOURCE_DIR}/include/configuration_loader.h)
+add_library(${CONFIG_TARGET_NAME} STATIC)
+target_sources(${CONFIG_TARGET_NAME}
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/configuration_loader.cc
+    PUBLIC
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
+    FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/configuration_loader.h)
 target_include_directories(${CONFIG_TARGET_NAME}
                            PRIVATE ${HEXAPOD_LUA_INCLUDE_DIRS})
 target_link_libraries(
