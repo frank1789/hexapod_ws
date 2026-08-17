@@ -110,6 +110,18 @@ RUN export DEBIAN_FRONTEND=noninteractive \
 # --------------------------------------------------------------------- ROS 2
 # The ros-apt-source .deb installs the keyring and the sources.list entry for
 # the running Ubuntu release, so no key handling is needed here.
+#
+# `rosdep init` is the one step in this layer that may fail without the image
+# being wrong, so it is the one step allowed to fail. It downloads
+# 20-default.list from raw.githubusercontent.com, which answers with a read
+# timeout or an HTTP 429 often enough to have destroyed whole builds:
+#
+#   ERROR: cannot download default sources list from:
+#   https://raw.githubusercontent.com/ros/rosdistro/master/rosdep/sources.list.d/20-default.list
+#
+# Nothing compiled by this workspace needs that file — the build dependencies
+# come from apt and from vcpkg — so a failure here is reported and the layer
+# continues. .devcontainer/postCreate.sh initialises rosdep if this did not.
 RUN export DEBIAN_FRONTEND=noninteractive \
     && ROS_APT_SOURCE_VERSION="$(curl -fsSL https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
         | grep -F '"tag_name"' | awk -F'"' '{print $4}')" \
@@ -130,7 +142,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
         ros-${ROS_DISTRO}-ament-flake8 \
         ros-${ROS_DISTRO}-ament-uncrustify \
         ros-dev-tools \
-    && rosdep init \
+    && { rosdep init \
+         || echo "WARNING: rosdep init could not fetch the default sources list; postCreate.sh will retry."; } \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------- LLVM/clang
@@ -275,17 +288,29 @@ USER ${USERNAME}
 WORKDIR /workspace
 
 # Interactive shells get ROS and, once built, the workspace overlay.
-# rosdep runs as the user because it writes into ${HOME}/.ros.
 # AMENT_TRACE_SETUP_FILES is read by setup.bash but not defined; set it empty
 # to prevent 'unbound variable' errors in strict shells.
+#
+# `rosdep update` deliberately does not run here, and adding it back reintroduces
+# a build failure. It fetches the rosdistro rule files over the network, gives up
+# after fifteen seconds per URL and exits non-zero, which took the whole image
+# down on one transient timeout:
+#
+#   ERROR: error loading sources list:
+#     The read operation timed out
+#
+# Nothing in this image needs that database in order to build the workspace: the
+# dependencies come from apt and from vcpkg, both resolved in earlier layers.
+# .devcontainer/postCreate.sh refreshes it when the container is created, where a
+# failure is a warning rather than a destroyed image, and docker/Dockerfile — the
+# image that ships to the robot — never runs rosdep at all.
 RUN printf '%s\n' \
         'export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"' \
         "source /opt/ros/${ROS_DISTRO}/setup.bash" \
         'if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi' \
         'export RCUTILS_COLORIZED_OUTPUT=1' \
         'export RCUTILS_CONSOLE_OUTPUT_FORMAT="[{severity}] [{name}]: {message}"' \
-        >> "${HOME}/.bashrc" \
-    && rosdep update --rosdistro "${ROS_DISTRO}"
+        >> "${HOME}/.bashrc"
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["bash"]

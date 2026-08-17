@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>hexapod_model</name>
+  <version>0.1.0</version>
+  <description>
+    Kinematic model of the hexapod: forward and inverse kinematics per leg, the
+    whole-robot solve from a body pose to eighteen joint angles, and the support
+    polygon margin. The leg geometry and the hip mounts are described by a Lua
+    script in config/ and are read at runtime, so no measurement of a particular
+    chassis is compiled in.
+  </description>
+  <maintainer email="francesco.argentieri89@gmail.com">Francesco Argentieri</maintainer>
+
+  <author email="francesco.argentieri89@gmail.com">Francesco Argentieri</author>
+  <author email="uni.lorenzo.a@gmail.com">Lorenzo Argentieri</author>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!--
+    hexapod_msgs and sensor_msgs are deliberately absent: this package publishes
+    nothing yet. They come back the moment the node puts a solved pose on
+    joint_command, together with the find_package() calls in CMakeLists.txt.
+  -->
+  <depend>ament_index_cpp</depend>
+  <depend>rclcpp</depend>
+
+  <!--
+    System dependencies. `eigen` is the rosdep key for libeigen3-dev, which is
+    what a build without vcpkg resolves against; with the vcpkg toolchain the
+    manifest copy in /opt/vcpkg_installed is found first and wins. Both install
+    the same Eigen3 CMake config package, so CMakeLists.txt needs no branch.
+
+    A Lua runtime and sol2 are needed for config/legs.lua, exactly as in
+    hexapod_servomotor. LuaJIT is preferred by CMake when it is installed and is
+    deliberately not listed here: it is optional, the build falls back to the
+    reference interpreter without it, and rosdep has no key for it. sol2 has no
+    key either and is fetched when it is not packaged.
+  -->
+  <depend>eigen</depend>
+  <depend>liblua5.3-dev</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

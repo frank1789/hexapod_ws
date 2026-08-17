@@ -17,3 +17,7 @@ trim_trailing_whitespace = true
 [*.json]
 indent_size = 4
 trim_trailing_whitespace = true
+
+[CMakeLists.txt, *.cmake]
+indent_size = 4
+trim_trailing_whitespace = true

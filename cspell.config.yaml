@@ -25,6 +25,8 @@ words:
   - servomotor
   - servomotors
   - servoconfiguration
+  - Denavit
+  - Hartenberg
   # ROS 2 and its tooling
   - rclcpp
   - rosidl
@@ -116,6 +118,16 @@ words:
   - respawn
   # compiler, linker and shell flags
   - Wextra
+  - mavx
+  - mfma
+  - mcpu
+  - mfpu
+  - march
+  - mtune
+  - DEIGEN
+  - DONT
+  - NDEBUG
+  - DNDEBUG
   - Wpedantic
   - Wreorder
   - fsyntax
@@ -180,6 +192,7 @@ words:
   - brokerless
   - backpressure
   # container, vcpkg and third-party library names
+  - libeigen
   - libfmt
   - nlohmann
   - vcpkg
@@ -190,6 +203,11 @@ words:
   - keyframed
   - pyzmq
   - Eigen
+  - Quaterniond
+  - vectorisable
+  - vectorises
+  - vzeroupper
+  - libm
   - RCUTILS
   - healthcheck
   - dontwait
@@ -202,6 +220,7 @@ words:
   - rtsp
   - rtmp
   - webrtc
+  - teardown
   - libx
   - rawvideo
   - zerolatency

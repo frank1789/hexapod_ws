@@ -121,6 +121,30 @@ as_root() {
   fi
 }
 
+# Retry a command that depends on somebody else's server staying up. Both rosdep
+# steps fetch from raw.githubusercontent.com, which answers with a read timeout
+# or an HTTP 429 often enough to have destroyed a whole container image build;
+# under `set -e` here it would abort the installation just as abruptly.
+#
+# The caller decides what an exhausted retry means — nothing here calls die.
+retry() {
+  local attempts="$1" label="$2"
+  shift 2
+
+  local attempt
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if "$@"; then
+      return 0
+    fi
+    warn "${label} failed (attempt ${attempt}/${attempts})"
+    if [ "${attempt}" -lt "${attempts}" ]; then
+      sleep $((attempt * 5))
+    fi
+  done
+
+  return 1
+}
+
 # ---------------------------------------------------------------- arguments
 
 usage() {
@@ -495,13 +519,19 @@ install_ros_packages() {
 setup_rosdep() {
   if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then
     info "initialising rosdep"
-    as_root rosdep init
+    # This downloads 20-default.list over the network, so it fails for reasons
+    # that have nothing to do with this machine. Unguarded under `set -e` it
+    # aborted the whole installation; nothing the workspace compiles needs that
+    # file, and resolve_workspace_dependencies below still names what it could
+    # not map.
+    retry 3 "rosdep init" as_root rosdep init ||
+      warn "rosdep init failed; the update and the resolution below cannot succeed"
   else
     info "rosdep is already initialised"
   fi
 
   info "updating the rosdep database as ${TARGET_USER}"
-  as_target_user rosdep update --rosdistro "${ROS_DISTRO_WANTED}" ||
+  retry 3 "rosdep update" as_target_user rosdep update --rosdistro "${ROS_DISTRO_WANTED}" ||
     warn "rosdep update failed; the resolution below may be incomplete"
 }
 
